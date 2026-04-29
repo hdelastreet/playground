@@ -1,7 +1,7 @@
-// room.js — Phase 3: Multi-User Sync via Firebase Realtime Database
-// No server needed — Firebase handles real-time sync across all computers.
+﻿// room.js â€” Phase 3: Multi-User Sync via Firebase Realtime Database
+// No server needed â€” Firebase handles real-time sync across all computers.
 //
-// ── SETUP: replace the placeholder values below with your Firebase project config ──
+// â”€â”€ SETUP: replace the placeholder values below with your Firebase project config â”€â”€
 // (See the setup guide at the bottom of steps-to-build.html)
 
 const FIREBASE_CONFIG = {
@@ -14,7 +14,7 @@ const FIREBASE_CONFIG = {
   appId: "1:443595862572:web:fafe0311a75d30c2c5d789"
 };
 
-const CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'];
+const CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '?', 'â˜•'];
 const SESSION_KEY = 'scrumestimate_session';
 
 let db = null;
@@ -22,7 +22,7 @@ let currentParticipantId = null;
 let currentRoomCode = null;
 let activeRoomRef = null; // Firebase ref being listened to
 
-// ── Firebase init ─────────────────────────────────────────────
+// â”€â”€ Firebase init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function initFirebase() {
   if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
@@ -34,7 +34,7 @@ function initFirebase() {
   });
 }
 
-// ── Utilities ─────────────────────────────────────────────────
+// â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -53,7 +53,7 @@ function escHtml(str) {
   );
 }
 
-// ── Session persistence ────────────────────────────────────────
+// â”€â”€ Session persistence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function getSession() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
@@ -63,7 +63,7 @@ function saveSession(participantId, roomCode) {
 }
 function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
 
-// ── Firebase helpers ──────────────────────────────────────────
+// â”€â”€ Firebase helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function rRef(path) { return db.ref(path); }
 function rootUpdate(updates) { return db.ref('/').update(updates); }
@@ -83,7 +83,7 @@ function normalizeRoom(raw) {
   };
 }
 
-// ── Real-time subscription ─────────────────────────────────────
+// â”€â”€ Real-time subscription â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function subscribeToRoom(code) {
   // Detach any previous listener
@@ -116,7 +116,7 @@ function subscribeToRoom(code) {
   });
 }
 
-// ── Room Actions ───────────────────────────────────────────────
+// â”€â”€ Room Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function createRoom(name) {
   setConnectionStatus('connecting');
@@ -288,11 +288,11 @@ function kickParticipant(targetId) {
   rRef(`rooms/${currentRoomCode}/participants/${targetId}`).remove();
 }
 
-// ── Consensus ──────────────────────────────────────────────────
+// â”€â”€ Consensus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function computeConsensus(votes) {
   const numeric = votes
-    .filter(v => v !== null && v !== '?' && v !== '☕')
+    .filter(v => v !== null && v !== '?' && v !== 'â˜•')
     .map(Number).filter(n => !isNaN(n));
   if (numeric.length === 0) return { avg: null, level: 'no-votes' };
   const avg = Math.round((numeric.reduce((a, b) => a + b, 0) / numeric.length) * 10) / 10;
@@ -304,17 +304,17 @@ function computeConsensus(votes) {
   };
 }
 
-// ── Connection status ──────────────────────────────────────────
+// â”€â”€ Connection status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function setConnectionStatus(status) {
   const dot = document.getElementById('conn-dot');
   const label = document.getElementById('conn-label');
   if (!dot) return;
   dot.className = 'conn-dot ' + status;
-  label.textContent = { connecting: 'Connecting…', connected: 'Connected', disconnected: 'Reconnecting…' }[status] || '';
+  label.textContent = { connecting: 'Connectingâ€¦', connected: 'Connected', disconnected: 'Reconnectingâ€¦' }[status] || '';
 }
 
-// ── Rendering ──────────────────────────────────────────────────
+// â”€â”€ Rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function renderRoom(room) {
   const me = room.participants.find(p => p.id === currentParticipantId);
@@ -323,7 +323,7 @@ function renderRoom(room) {
 
   document.getElementById('room-code-display').textContent = room.code;
   document.getElementById('active-story-title').textContent =
-    activeStory ? activeStory.title : 'No active story — add one below';
+    activeStory ? activeStory.title : 'No active story â€” add one below';
   document.getElementById('facilitator-badge').classList.toggle('hidden', !isFacilitator);
 
   // Participant list
@@ -335,17 +335,17 @@ function renderRoom(room) {
 
     let voteHtml;
     if (room.revealed) {
-      voteHtml = `<span class="vote-badge revealed">${escHtml(p.vote ?? '—')}</span>`;
+      voteHtml = `<span class="vote-badge revealed">${escHtml(p.vote ?? 'â€”')}</span>`;
     } else {
       voteHtml = p.hasVoted
-        ? `<span class="vote-badge voted">✔</span>`
-        : `<span class="vote-badge waiting">…</span>`;
+        ? `<span class="vote-badge voted">âœ”</span>`
+        : `<span class="vote-badge waiting">â€¦</span>`;
     }
 
     const roleTag = p.isFacilitator ? `<span class="role-tag">host</span>` : '';
     const offlineTag = p.connected === false ? `<span class="offline-tag">offline</span>` : '';
     const kickBtn = (isFacilitator && p.id !== currentParticipantId)
-      ? `<button class="btn-icon danger kick-btn" data-id="${escHtml(p.id)}" title="Remove participant">✕</button>`
+      ? `<button class="btn-icon danger kick-btn" data-id="${escHtml(p.id)}" title="Remove participant">âœ•</button>`
       : '';
 
     li.innerHTML = `
@@ -409,7 +409,7 @@ function renderStoryQueue(room) {
     const li = document.createElement('li');
     li.className = 'story-item' + (isActive ? ' active' : '') + (isDone ? ' done' : '');
     const activateBtn = (!isDone && !isActive)
-      ? `<button class="btn-icon" data-action="activate" data-id="${escHtml(story.id)}" title="Set active">▶</button>`
+      ? `<button class="btn-icon" data-action="activate" data-id="${escHtml(story.id)}" title="Set active">â–¶</button>`
       : '';
     const pointsBadge = isDone && story.points !== null
       ? `<span class="story-points-badge">${story.points}pt</span>` : '';
@@ -418,7 +418,7 @@ function renderStoryQueue(room) {
       ${pointsBadge}
       <span class="story-item-actions">
         ${activateBtn}
-        <button class="btn-icon danger" data-action="remove" data-id="${escHtml(story.id)}" title="Remove">✕</button>
+        <button class="btn-icon danger" data-action="remove" data-id="${escHtml(story.id)}" title="Remove">âœ•</button>
       </span>
     `;
     ul.appendChild(li);
@@ -439,7 +439,7 @@ function renderResults(room, isFacilitator) {
   table.innerHTML = `
     <thead><tr><th>Participant</th><th>Vote</th></tr></thead>
     <tbody>${room.participants.map(p =>
-      `<tr><td>${escHtml(p.name)}</td><td class="vote-cell">${escHtml(p.vote ?? '—')}</td></tr>`
+      `<tr><td>${escHtml(p.name)}</td><td class="vote-cell">${escHtml(p.vote ?? 'â€”')}</td></tr>`
     ).join('')}</tbody>
   `;
 
@@ -447,7 +447,7 @@ function renderResults(room, isFacilitator) {
   if (consensus.level === 'no-votes') {
     indicator.innerHTML = `<span class="consensus-tag no-votes">No numeric votes cast</span>`;
   } else {
-    const labels = { unanimous: '✔ Unanimous!', close: '~ Close', split: '⚠ Split' };
+    const labels = { unanimous: 'âœ” Unanimous!', close: '~ Close', split: 'âš  Split' };
     indicator.innerHTML = `
       Average: <strong>${consensus.avg}</strong>
       &nbsp;<span class="consensus-tag ${consensus.level}">${labels[consensus.level]}</span>
@@ -462,7 +462,7 @@ function renderResults(room, isFacilitator) {
   }
 }
 
-// ── Form errors ────────────────────────────────────────────────
+// â”€â”€ Form errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function showFormError(formId, msg) {
   const form = document.getElementById(formId);
@@ -478,14 +478,14 @@ function clearFormError(formId) {
   document.getElementById(formId).querySelector('.form-error')?.remove();
 }
 
-// ── Panel transitions ─────────────────────────────────────────
+// â”€â”€ Panel transitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function showRoomPanel() {
   document.getElementById('setup-panel').classList.add('hidden');
   document.getElementById('room-panel').classList.remove('hidden');
 }
 
-// ── Init ──────────────────────────────────────────────────────
+// â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function initRoom() {
   initFirebase();
@@ -549,437 +549,6 @@ function initRoom() {
     currentRoomCode = session.roomCode;
     showRoomPanel();
     joinRoom(session.roomCode, ''); // will detect existing session and reconnect
-  }
-}
-
-document.addEventListener('DOMContentLoaded', initRoom);
-
-const CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'];
-const SESSION_KEY = 'scrumestimate_session';
-// Point ws:// at the same hostname as the page, port 3000.
-const WS_URL = (location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.hostname + ':3000';
-
-// ── Client state ───────────────────────────────────────────────
-let ws = null;
-let currentParticipantId = null; // our identity (stored in sessionStorage)
-let currentRoom = null;          // last full state snapshot from server
-let reconnectTimer = null;
-let reconnectDelay = 1000;
-let pendingAction = null;        // { type, payload } to send once connected
-
-// ── Utilities ──────────────────────────────────────────────────
-
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function escHtml(str) {
-  return String(str).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
-  );
-}
-
-// ── Session persistence (survives page refresh) ────────────────
-
-function getSession() {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
-}
-
-function saveSession(participantId, roomCode) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ participantId, roomCode }));
-}
-
-function clearSession() {
-  sessionStorage.removeItem(SESSION_KEY);
-}
-
-// ── WebSocket connection ───────────────────────────────────────
-
-function connect(onOpen) {
-  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
-
-  setConnectionStatus('connecting');
-  ws = new WebSocket(WS_URL);
-
-  ws.addEventListener('open', () => {
-    reconnectDelay = 1000;
-    setConnectionStatus('connected');
-    if (onOpen) { onOpen(); onOpen = null; }
-  });
-
-  ws.addEventListener('message', (event) => {
-    let msg;
-    try { msg = JSON.parse(event.data); } catch { return; }
-    handleServerMessage(msg);
-  });
-
-  ws.addEventListener('close', () => {
-    setConnectionStatus('disconnected');
-    scheduleReconnect();
-  });
-
-  ws.addEventListener('error', () => {
-    // 'close' will follow; no extra handling needed
-  });
-}
-
-function scheduleReconnect() {
-  if (reconnectTimer) return;
-  reconnectTimer = setTimeout(() => {
-    reconnectTimer = null;
-    // If we were in a room, try to rejoin on reconnect
-    const session = getSession();
-    connect(session ? () => rejoinSession(session) : null);
-  }, reconnectDelay);
-  reconnectDelay = Math.min(reconnectDelay * 2, 16000);
-}
-
-function send(obj) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(obj));
-  }
-}
-
-// ── Server message handler ─────────────────────────────────────
-
-function handleServerMessage(msg) {
-  switch (msg.type) {
-    case 'state':
-      currentRoom = msg.room;
-      if (!document.getElementById('room-panel').classList.contains('hidden') ||
-          document.getElementById('setup-panel').classList.contains('hidden')) {
-        renderRoom(currentRoom);
-      } else {
-        showRoomPanel();
-      }
-      break;
-    case 'error':
-      // Surface server errors back to the appropriate form
-      if (document.getElementById('setup-panel') &&
-          !document.getElementById('setup-panel').classList.contains('hidden')) {
-        const activeForm = document.getElementById('form-join').classList.contains('hidden')
-          ? 'form-create' : 'form-join';
-        showFormError(activeForm, msg.message);
-      }
-      break;
-    case 'kicked':
-      clearSession();
-      currentRoom = null;
-      currentParticipantId = null;
-      alert('You were removed from the room by the facilitator.');
-      location.reload();
-      break;
-  }
-}
-
-// ── Room actions (client → server) ────────────────────────────
-
-function createRoom(name) {
-  currentParticipantId = generateId();
-  saveSession(currentParticipantId, null); // code unknown until server responds
-  connect(() => send({ type: 'create', name, participantId: currentParticipantId }));
-}
-
-function joinRoom(code, name) {
-  currentParticipantId = generateId();
-  saveSession(currentParticipantId, code);
-  connect(() => send({ type: 'join', code, name, participantId: currentParticipantId }));
-}
-
-function rejoinSession(session) {
-  currentParticipantId = session.participantId;
-  send({ type: 'join', code: session.roomCode, name: '(reconnecting)', participantId: session.participantId });
-}
-
-function vote(value) { send({ type: 'vote', value }); }
-function revealVotes() { send({ type: 'reveal' }); }
-function newRound() { send({ type: 'new-round' }); }
-function addStory(title) { send({ type: 'add-story', title }); }
-function removeStory(storyId) { send({ type: 'remove-story', storyId }); }
-function setActiveStory(storyId) { send({ type: 'set-active-story', storyId }); }
-function confirmStory(points) { send({ type: 'confirm-story', points }); }
-function kickParticipant(targetId) { send({ type: 'kick', targetId }); }
-
-// ── Consensus ──────────────────────────────────────────────────
-
-function computeConsensus(votes) {
-  const numeric = votes
-    .filter(v => v !== null && v !== '?' && v !== '☕')
-    .map(Number)
-    .filter(n => !isNaN(n));
-  if (numeric.length === 0) return { avg: null, level: 'no-votes' };
-  const avg = Math.round((numeric.reduce((a, b) => a + b, 0) / numeric.length) * 10) / 10;
-  const min = Math.min(...numeric);
-  const max = Math.max(...numeric);
-  let level;
-  if (min === max) level = 'unanimous';
-  else if (max - min <= 2) level = 'close';
-  else level = 'split';
-  return { avg, min, max, level };
-}
-
-// ── Connection status indicator ────────────────────────────────
-
-function setConnectionStatus(status) {
-  const dot = document.getElementById('conn-dot');
-  const label = document.getElementById('conn-label');
-  if (!dot) return;
-  dot.className = 'conn-dot ' + status;
-  label.textContent = { connecting: 'Connecting…', connected: 'Connected', disconnected: 'Reconnecting…' }[status] || '';
-}
-
-// ── Rendering ──────────────────────────────────────────────────
-
-function renderRoom(room) {
-  const me = room.participants.find(p => p.id === currentParticipantId);
-  const isFacilitator = !!(me && me.isFacilitator);
-  const activeStory = room.stories.find(s => s.id === room.activeStoryId);
-
-  // Persist the room code in session now that we know it
-  if (currentParticipantId) saveSession(currentParticipantId, room.code);
-
-  // Header
-  document.getElementById('room-code-display').textContent = room.code;
-  document.getElementById('active-story-title').textContent =
-    activeStory ? activeStory.title : 'No active story — add one below';
-  document.getElementById('facilitator-badge').classList.toggle('hidden', !isFacilitator);
-
-  // Participant list
-  const ul = document.getElementById('participant-list');
-  ul.innerHTML = '';
-  room.participants.forEach(p => {
-    const li = document.createElement('li');
-    li.className = 'participant-item' + (p.connected === false ? ' disconnected' : '');
-
-    let voteHtml;
-    if (room.revealed) {
-      voteHtml = `<span class="vote-badge revealed">${escHtml(p.vote ?? '—')}</span>`;
-    } else {
-      voteHtml = p.hasVoted
-        ? `<span class="vote-badge voted">✔</span>`
-        : `<span class="vote-badge waiting">…</span>`;
-    }
-
-    const roleTag = p.isFacilitator ? `<span class="role-tag">host</span>` : '';
-    const offlineTag = p.connected === false ? `<span class="offline-tag">offline</span>` : '';
-
-    // Kick button: shown only to facilitator, only for other participants
-    const kickBtn = (isFacilitator && p.id !== currentParticipantId)
-      ? `<button class="btn-icon danger kick-btn" data-id="${escHtml(p.id)}" title="Remove participant">✕</button>`
-      : '';
-
-    li.innerHTML = `
-      <span class="participant-name">${escHtml(p.name)}${roleTag}${offlineTag}</span>
-      <span class="participant-right">${voteHtml}${kickBtn}</span>
-    `;
-    ul.appendChild(li);
-  });
-
-  ul.querySelectorAll('.kick-btn').forEach(btn => {
-    btn.addEventListener('click', () => kickParticipant(btn.dataset.id));
-  });
-
-  // Story queue (facilitator only)
-  const storySection = document.getElementById('story-section');
-  storySection.classList.toggle('hidden', !isFacilitator);
-  if (isFacilitator) renderStoryQueue(room);
-
-  // Card deck
-  renderCards(room, me);
-
-  // Facilitator controls
-  const controls = document.getElementById('facilitator-controls');
-  controls.classList.toggle('hidden', !isFacilitator);
-  if (isFacilitator) {
-    const anyVoted = room.participants.some(p => p.hasVoted);
-    document.getElementById('btn-reveal').disabled = room.revealed || !anyVoted || !room.activeStoryId;
-    document.getElementById('btn-reset').disabled = !room.revealed && !anyVoted;
-  }
-
-  // Results panel
-  const resultsPanel = document.getElementById('results-panel');
-  resultsPanel.classList.toggle('hidden', !room.revealed);
-  if (room.revealed) renderResults(room, isFacilitator);
-}
-
-function renderCards(room, me) {
-  const deck = document.getElementById('card-deck');
-  deck.innerHTML = '';
-  const disabled = room.revealed || !room.activeStoryId;
-  CARDS.forEach(value => {
-    const btn = document.createElement('button');
-    btn.className = 'card' + (me && me.vote === value && !room.revealed ? ' selected' : '');
-    btn.textContent = value;
-    btn.disabled = disabled;
-    btn.setAttribute('aria-label', 'Vote ' + value);
-    btn.addEventListener('click', () => vote(value));
-    deck.appendChild(btn);
-  });
-}
-
-function renderStoryQueue(room) {
-  const ul = document.getElementById('story-queue');
-  ul.innerHTML = '';
-  if (room.stories.length === 0) {
-    ul.innerHTML = '<li class="story-empty">No stories yet.</li>';
-    return;
-  }
-  room.stories.forEach(story => {
-    const isActive = story.id === room.activeStoryId;
-    const isDone = story.status === 'done';
-    const li = document.createElement('li');
-    li.className = 'story-item' + (isActive ? ' active' : '') + (isDone ? ' done' : '');
-    const activateBtn = (!isDone && !isActive)
-      ? `<button class="btn-icon" data-action="activate" data-id="${escHtml(story.id)}" title="Set active">▶</button>`
-      : '';
-    const pointsBadge = isDone && story.points !== null
-      ? `<span class="story-points-badge">${story.points}pt</span>`
-      : '';
-    li.innerHTML = `
-      <span class="story-title-text">${escHtml(story.title)}</span>
-      ${pointsBadge}
-      <span class="story-item-actions">
-        ${activateBtn}
-        <button class="btn-icon danger" data-action="remove" data-id="${escHtml(story.id)}" title="Remove">✕</button>
-      </span>
-    `;
-    ul.appendChild(li);
-  });
-  ul.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.dataset.action === 'activate') setActiveStory(btn.dataset.id);
-      if (btn.dataset.action === 'remove') removeStory(btn.dataset.id);
-    });
-  });
-}
-
-function renderResults(room, isFacilitator) {
-  const table = document.getElementById('results-table');
-  const indicator = document.getElementById('consensus-indicator');
-  const btnConfirm = document.getElementById('btn-confirm-story');
-
-  const rows = room.participants.map(p =>
-    `<tr><td>${escHtml(p.name)}</td><td class="vote-cell">${escHtml(p.vote ?? '—')}</td></tr>`
-  ).join('');
-  table.innerHTML = `
-    <thead><tr><th>Participant</th><th>Vote</th></tr></thead>
-    <tbody>${rows}</tbody>
-  `;
-
-  const consensus = computeConsensus(room.participants.map(p => p.vote));
-  if (consensus.level === 'no-votes') {
-    indicator.innerHTML = `<span class="consensus-tag no-votes">No numeric votes cast</span>`;
-  } else {
-    const labels = { unanimous: '✔ Unanimous!', close: '~ Close', split: '⚠ Split' };
-    indicator.innerHTML = `
-      Average: <strong>${consensus.avg}</strong>
-      &nbsp;<span class="consensus-tag ${consensus.level}">${labels[consensus.level]}</span>
-    `;
-  }
-
-  if (isFacilitator && room.activeStoryId) {
-    btnConfirm.classList.remove('hidden');
-    btnConfirm.onclick = () => confirmStory(consensus.avg);
-  } else {
-    btnConfirm.classList.add('hidden');
-  }
-}
-
-// ── Error display ─────────────────────────────────────────────
-
-function showFormError(formId, msg) {
-  const form = document.getElementById(formId);
-  let err = form.querySelector('.form-error');
-  if (!err) {
-    err = document.createElement('p');
-    err.className = 'form-error';
-    form.insertBefore(err, form.querySelector('button[type="submit"]'));
-  }
-  err.textContent = msg;
-}
-
-function clearFormError(formId) {
-  const form = document.getElementById(formId);
-  const err = form.querySelector('.form-error');
-  if (err) err.remove();
-}
-
-// ── Panel transitions ─────────────────────────────────────────
-
-function showRoomPanel() {
-  document.getElementById('setup-panel').classList.add('hidden');
-  document.getElementById('room-panel').classList.remove('hidden');
-  if (currentRoom) renderRoom(currentRoom);
-}
-
-// ── Init ──────────────────────────────────────────────────────
-
-function initRoom() {
-  const params = new URLSearchParams(window.location.search);
-  const isJoin = params.get('join') === 'true';
-  const preCode = (params.get('roomId') || '').toUpperCase();
-
-  const tabCreate = document.getElementById('tab-create');
-  const tabJoin = document.getElementById('tab-join');
-  const formCreate = document.getElementById('form-create');
-  const formJoin = document.getElementById('form-join');
-
-  function showCreate() {
-    tabCreate.classList.add('active');
-    tabJoin.classList.remove('active');
-    formCreate.classList.remove('hidden');
-    formJoin.classList.add('hidden');
-  }
-
-  function showJoin() {
-    tabJoin.classList.add('active');
-    tabCreate.classList.remove('active');
-    formJoin.classList.remove('hidden');
-    formCreate.classList.add('hidden');
-    if (preCode) document.getElementById('input-room-code').value = preCode;
-  }
-
-  tabCreate.addEventListener('click', showCreate);
-  tabJoin.addEventListener('click', showJoin);
-  if (isJoin || preCode) showJoin(); else showCreate();
-
-  formCreate.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = document.getElementById('input-facilitator-name').value.trim();
-    if (!name) return;
-    clearFormError('form-create');
-    createRoom(name);
-  });
-
-  formJoin.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = document.getElementById('input-participant-name').value.trim();
-    const code = document.getElementById('input-room-code').value.trim().toUpperCase();
-    if (!name || !code) return;
-    clearFormError('form-join');
-    joinRoom(code, name);
-  });
-
-  document.getElementById('form-add-story').addEventListener('submit', e => {
-    e.preventDefault();
-    const input = document.getElementById('story-input');
-    const title = input.value.trim();
-    if (!title) return;
-    addStory(title);
-    input.value = '';
-  });
-
-  document.getElementById('btn-reveal').addEventListener('click', revealVotes);
-  document.getElementById('btn-reset').addEventListener('click', newRound);
-
-  // Restore session on page refresh
-  const session = getSession();
-  if (session && session.roomCode && session.participantId) {
-    currentParticipantId = session.participantId;
-    // Show room panel immediately (blank); it will populate once WS confirms
-    document.getElementById('setup-panel').classList.add('hidden');
-    document.getElementById('room-panel').classList.remove('hidden');
-    connect(() => rejoinSession(session));
   }
 }
 
