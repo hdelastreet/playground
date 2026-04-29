@@ -72,14 +72,10 @@ function rootUpdate(updates) { return db.ref('/').update(updates); }
 function normalizeRoom(raw) {
   const participants = Object.values(raw.participants || {})
     .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
-  const stories = Object.values(raw.stories || {})
-    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   return {
     code: raw.code,
-    activeStoryId: raw.activeStoryId || null,
     revealed: !!raw.revealed,
     participants,
-    stories,
   };
 }
 
@@ -134,7 +130,6 @@ async function createRoom(name) {
 
   await rRef(`rooms/${code}`).set({
     code,
-    activeStoryId: null,
     revealed: false,
     participants: {
       [participantId]: {
@@ -142,7 +137,6 @@ async function createRoom(name) {
         hasVoted: false, vote: null, connected: true, joinedAt: Date.now(),
       },
     },
-    stories: {},
   });
 
   // Auto-mark offline on unexpected disconnect
@@ -217,72 +211,6 @@ async function newRound() {
   rootUpdate(updates);
 }
 
-async function addStory(title) {
-  const storyId = generateId();
-  const updates = {
-    [`rooms/${currentRoomCode}/stories/${storyId}`]: {
-      id: storyId, title, status: 'pending', points: null, createdAt: Date.now(),
-    },
-  };
-  const activeSnap = await rRef(`rooms/${currentRoomCode}/activeStoryId`).once('value');
-  if (!activeSnap.val()) {
-    updates[`rooms/${currentRoomCode}/activeStoryId`] = storyId;
-  }
-  rootUpdate(updates);
-}
-
-async function removeStory(storyId) {
-  const snap = await rRef(`rooms/${currentRoomCode}`).once('value');
-  const raw = snap.val();
-  const updates = { [`rooms/${currentRoomCode}/stories/${storyId}`]: null };
-
-  if (raw.activeStoryId === storyId) {
-    const remaining = Object.values(raw.stories || {})
-      .filter(s => s.id !== storyId && s.status === 'pending')
-      .sort((a, b) => a.createdAt - b.createdAt);
-    updates[`rooms/${currentRoomCode}/activeStoryId`] = remaining[0]?.id || null;
-    updates[`rooms/${currentRoomCode}/revealed`] = false;
-    Object.values(raw.participants || {}).forEach(p => {
-      updates[`rooms/${currentRoomCode}/participants/${p.id}/vote`] = null;
-      updates[`rooms/${currentRoomCode}/participants/${p.id}/hasVoted`] = false;
-    });
-  }
-  rootUpdate(updates);
-}
-
-async function setActiveStory(storyId) {
-  const pSnap = await rRef(`rooms/${currentRoomCode}/participants`).once('value');
-  const updates = {
-    [`rooms/${currentRoomCode}/activeStoryId`]: storyId,
-    [`rooms/${currentRoomCode}/revealed`]: false,
-  };
-  pSnap.forEach(child => {
-    updates[`rooms/${currentRoomCode}/participants/${child.key}/vote`] = null;
-    updates[`rooms/${currentRoomCode}/participants/${child.key}/hasVoted`] = false;
-  });
-  rootUpdate(updates);
-}
-
-async function confirmStory(points) {
-  const snap = await rRef(`rooms/${currentRoomCode}`).once('value');
-  const raw = snap.val();
-  const activeId = raw.activeStoryId;
-  const stories = Object.values(raw.stories || {}).sort((a, b) => a.createdAt - b.createdAt);
-  const next = stories.find(s => s.id !== activeId && s.status === 'pending');
-
-  const updates = {
-    [`rooms/${currentRoomCode}/stories/${activeId}/status`]: 'done',
-    [`rooms/${currentRoomCode}/stories/${activeId}/points`]: points,
-    [`rooms/${currentRoomCode}/activeStoryId`]: next?.id || null,
-    [`rooms/${currentRoomCode}/revealed`]: false,
-  };
-  Object.values(raw.participants || {}).forEach(p => {
-    updates[`rooms/${currentRoomCode}/participants/${p.id}/vote`] = null;
-    updates[`rooms/${currentRoomCode}/participants/${p.id}/hasVoted`] = false;
-  });
-  rootUpdate(updates);
-}
-
 function kickParticipant(targetId) {
   if (targetId === currentParticipantId) return;
   rRef(`rooms/${currentRoomCode}/participants/${targetId}`).remove();
@@ -319,11 +247,8 @@ function setConnectionStatus(status) {
 function renderRoom(room) {
   const me = room.participants.find(p => p.id === currentParticipantId);
   const isFacilitator = !!(me && me.isFacilitator);
-  const activeStory = room.stories.find(s => s.id === room.activeStoryId);
 
   document.getElementById('room-code-display').textContent = room.code;
-  document.getElementById('active-story-title').textContent =
-    activeStory ? activeStory.title : 'No active story — add one below';
   document.getElementById('facilitator-badge').classList.toggle('hidden', !isFacilitator);
 
   // Participant list
@@ -358,11 +283,6 @@ function renderRoom(room) {
     btn.addEventListener('click', () => kickParticipant(btn.dataset.id))
   );
 
-  // Story queue (facilitator only)
-  const storySection = document.getElementById('story-section');
-  storySection.classList.toggle('hidden', !isFacilitator);
-  if (isFacilitator) renderStoryQueue(room);
-
   // Card deck
   renderCards(room, me);
 
@@ -371,7 +291,7 @@ function renderRoom(room) {
   controls.classList.toggle('hidden', !isFacilitator);
   if (isFacilitator) {
     const anyVoted = room.participants.some(p => p.hasVoted);
-    document.getElementById('btn-reveal').disabled = room.revealed || !anyVoted || !room.activeStoryId;
+    document.getElementById('btn-reveal').disabled = room.revealed || !anyVoted;
     document.getElementById('btn-reset').disabled = !room.revealed && !anyVoted;
   }
 
@@ -394,41 +314,6 @@ function renderCards(room, me) {
     btn.addEventListener('click', () => vote(value));
     deck.appendChild(btn);
   });
-}
-
-function renderStoryQueue(room) {
-  const ul = document.getElementById('story-queue');
-  ul.innerHTML = '';
-  if (room.stories.length === 0) {
-    ul.innerHTML = '<li class="story-empty">No stories yet.</li>';
-    return;
-  }
-  room.stories.forEach(story => {
-    const isActive = story.id === room.activeStoryId;
-    const isDone = story.status === 'done';
-    const li = document.createElement('li');
-    li.className = 'story-item' + (isActive ? ' active' : '') + (isDone ? ' done' : '');
-    const activateBtn = (!isDone && !isActive)
-      ? `<button class="btn-icon" data-action="activate" data-id="${escHtml(story.id)}" title="Set active">▲</button>`
-      : '';
-    const pointsBadge = isDone && story.points !== null
-      ? `<span class="story-points-badge">${story.points}pt</span>` : '';
-    li.innerHTML = `
-      <span class="story-title-text">${escHtml(story.title)}</span>
-      ${pointsBadge}
-      <span class="story-item-actions">
-        ${activateBtn}
-        <button class="btn-icon danger" data-action="remove" data-id="${escHtml(story.id)}" title="Remove">✖</button>
-      </span>
-    `;
-    ul.appendChild(li);
-  });
-  ul.querySelectorAll('[data-action]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      if (btn.dataset.action === 'activate') setActiveStory(btn.dataset.id);
-      if (btn.dataset.action === 'remove') removeStory(btn.dataset.id);
-    })
-  );
 }
 
 function renderResults(room, isFacilitator) {
@@ -454,12 +339,7 @@ function renderResults(room, isFacilitator) {
     `;
   }
 
-  if (isFacilitator && room.activeStoryId) {
-    btnConfirm.classList.remove('hidden');
-    btnConfirm.onclick = () => confirmStory(consensus.avg);
-  } else {
-    btnConfirm.classList.add('hidden');
-  }
+  btnConfirm.classList.add('hidden');
 }
 
 // ―― Form errors ――
@@ -528,15 +408,6 @@ function initRoom() {
     if (!name || !code) return;
     clearFormError('form-join');
     joinRoom(code, name);
-  });
-
-  document.getElementById('form-add-story').addEventListener('submit', e => {
-    e.preventDefault();
-    const input = document.getElementById('story-input');
-    const title = input.value.trim();
-    if (!title) return;
-    addStory(title);
-    input.value = '';
   });
 
   document.getElementById('btn-reveal').addEventListener('click', revealVotes);

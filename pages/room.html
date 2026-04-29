@@ -59,10 +59,6 @@
         <span class="room-code-label">Room&nbsp;<strong id="room-code-display">—</strong></span>
         <span id="facilitator-badge" class="badge hidden">Facilitator</span>
       </div>
-      <div class="active-story-banner">
-        <span class="story-banner-label">Active story</span>
-        <span id="active-story-title" class="story-banner-text">No active story</span>
-      </div>
       <div class="conn-status">
         <span id="conn-dot" class="conn-dot connecting"></span>
         <span id="conn-label" class="conn-label">Connecting…</span>
@@ -77,15 +73,6 @@
         <section class="panel">
           <h3 class="panel-title">Participants</h3>
           <ul id="participant-list" class="participant-list"></ul>
-        </section>
-
-        <section id="story-section" class="panel hidden">
-          <h3 class="panel-title">Story Queue</h3>
-          <form id="form-add-story" class="add-story-form">
-            <input id="story-input" type="text" placeholder="Add a user story…" maxlength="120" />
-            <button type="submit" class="btn btn-primary btn-sm">Add</button>
-          </form>
-          <ul id="story-queue" class="story-queue"></ul>
         </section>
 
       </aside>
@@ -107,9 +94,6 @@
           <h3 class="panel-title">Results</h3>
           <table id="results-table" class="results-table"></table>
           <div id="consensus-indicator" class="consensus-indicator"></div>
-          <button id="btn-confirm-story" class="btn btn-primary hidden" style="margin-top:1.25rem">
-            Confirm &amp; Next Story
-          </button>
         </section>
 
       </div>
