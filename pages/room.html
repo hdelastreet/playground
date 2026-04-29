@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScrumEstimate — Estimation Room</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <a class="brand" href="../index.html">ScrumEstimate</a>
+    <ul>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="room.html" class="active">Room</a></li>
+      <li><a href="../steps-to-build.html">Steps to build</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── Setup Panel ───────────────────────────────────────── -->
+  <main id="setup-panel" class="setup-panel">
+    <div class="setup-card">
+      <h2>Welcome to ScrumEstimate</h2>
+      <p class="setup-subtitle">Create a new room or join an existing one.</p>
+
+      <div class="setup-tabs">
+        <button id="tab-create" class="tab-btn active">Create Room</button>
+        <button id="tab-join" class="tab-btn">Join Room</button>
+      </div>
+
+      <!-- Create form -->
+      <form id="form-create">
+        <div class="form-group">
+          <label for="input-facilitator-name">Your name</label>
+          <input id="input-facilitator-name" type="text" placeholder="e.g. Alice" maxlength="40" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Create Room</button>
+      </form>
+
+      <!-- Join form -->
+      <form id="form-join" class="hidden">
+        <div class="form-group">
+          <label for="input-participant-name">Your name</label>
+          <input id="input-participant-name" type="text" placeholder="e.g. Bob" maxlength="40" required />
+        </div>
+        <div class="form-group">
+          <label for="input-room-code">Room code</label>
+          <input id="input-room-code" type="text" placeholder="e.g. ABC123" maxlength="6" autocomplete="off" style="text-transform:uppercase" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Join Room</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- ── Room Panel ────────────────────────────────────────── -->
+  <div id="room-panel" class="hidden">
+
+    <header class="room-header">
+      <div class="room-meta">
+        <span class="room-code-label">Room&nbsp;<strong id="room-code-display">—</strong></span>
+        <span id="facilitator-badge" class="badge hidden">Facilitator</span>
+      </div>
+      <div class="active-story-banner">
+        <span class="story-banner-label">Active story</span>
+        <span id="active-story-title" class="story-banner-text">No active story</span>
+      </div>
+      <div class="conn-status">
+        <span id="conn-dot" class="conn-dot connecting"></span>
+        <span id="conn-label" class="conn-label">Connecting…</span>
+      </div>
+    </header>
+
+    <div class="room-layout">
+
+      <!-- Sidebar: participants + story queue -->
+      <aside class="room-sidebar">
+
+        <section class="panel">
+          <h3 class="panel-title">Participants</h3>
+          <ul id="participant-list" class="participant-list"></ul>
+        </section>
+
+        <section id="story-section" class="panel hidden">
+          <h3 class="panel-title">Story Queue</h3>
+          <form id="form-add-story" class="add-story-form">
+            <input id="story-input" type="text" placeholder="Add a user story…" maxlength="120" />
+            <button type="submit" class="btn btn-primary btn-sm">Add</button>
+          </form>
+          <ul id="story-queue" class="story-queue"></ul>
+        </section>
+
+      </aside>
+
+      <!-- Main: cards + controls + results -->
+      <div class="room-main">
+
+        <section class="panel card-panel">
+          <h3 class="panel-title">Cast Your Vote</h3>
+          <div id="card-deck" class="card-deck"></div>
+        </section>
+
+        <div id="facilitator-controls" class="facilitator-controls hidden">
+          <button id="btn-reveal" class="btn btn-primary" disabled>Reveal Votes</button>
+          <button id="btn-reset" class="btn btn-secondary" disabled>New Round</button>
+        </div>
+
+        <section id="results-panel" class="panel results-panel hidden">
+          <h3 class="panel-title">Results</h3>
+          <table id="results-table" class="results-table"></table>
+          <div id="consensus-indicator" class="consensus-indicator"></div>
+          <button id="btn-confirm-story" class="btn btn-primary hidden" style="margin-top:1.25rem">
+            Confirm &amp; Next Story
+          </button>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <!-- Firebase Realtime Database SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script src="../js/room.js"></script>
+</body>
+</html>
