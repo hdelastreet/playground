@@ -155,7 +155,7 @@ ol, ul { padding-left: 1.25rem; }
 
 .form-group { display: flex; flex-direction: column; gap: .35rem; margin-bottom: 1rem; }
 .form-group label { font-size: .85rem; font-weight: 600; color: var(--color-text); }
-.form-group input, .add-story-form input, #story-input {
+.form-group input {
   padding: .6rem .85rem;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius);
@@ -166,7 +166,7 @@ ol, ul { padding-left: 1.25rem; }
   transition: border-color .15s;
   width: 100%;
 }
-.form-group input:focus, .add-story-form input:focus {
+.form-group input:focus {
   outline: none;
   border-color: var(--color-primary);
 }
@@ -206,9 +206,6 @@ ol, ul { padding-left: 1.25rem; }
   color: #fff;
   letter-spacing: .03em;
 }
-.active-story-banner { display: flex; align-items: baseline; gap: .6rem; min-width: 0; }
-.story-banner-label { font-size: .75rem; font-weight: 700; color: var(--color-muted); text-transform: uppercase; letter-spacing: .06em; flex-shrink: 0; }
-.story-banner-text { font-size: .95rem; font-weight: 600; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px; }
 
 /* ── Room layout ───────────────────────────────────────────── */
 .room-layout {
@@ -396,7 +393,6 @@ ol, ul { padding-left: 1.25rem; }
   .phase { padding: 1.2rem 1.2rem; }
   .room-layout { grid-template-columns: 1fr; }
   .room-header { padding: .75rem 1rem; gap: .75rem; }
-  .story-banner-text { max-width: 200px; }
   .setup-card { padding: 1.5rem 1.25rem; }
   .card { width: 52px; height: 72px; font-size: 1.1rem; }
 }
