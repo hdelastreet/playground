@@ -372,6 +372,20 @@ ol, ul { padding-left: 1.25rem; }
   50%       { opacity: .4; }
 }
 .conn-label { font-size: .75rem; color: var(--color-muted); }
+.btn-leave {
+  margin-left: auto;
+  background: none;
+  border: 1.5px solid #fca5a5;
+  color: #dc2626;
+  font-size: .82rem;
+  padding: .35rem .9rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.btn-leave:hover { background: #fee2e2; }
 
 /* ── Offline / disconnected participants ───────────────────── */
 .participant-item.disconnected { opacity: .5; }

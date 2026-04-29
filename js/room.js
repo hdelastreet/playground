@@ -21,6 +21,7 @@ let db = null;
 let currentParticipantId = null;
 let currentRoomCode = null;
 let activeRoomRef = null; // Firebase ref being listened to
+let leavingIntentionally = false;
 
 // Firebase initialization and connection status handling
 
@@ -88,16 +89,18 @@ function subscribeToRoom(code) {
   activeRoomRef = rRef(`rooms/${code}`);
   activeRoomRef.on('value', snap => {
     if (!snap.exists()) {
-      clearSession();
-      alert('This room no longer exists.');
-      location.reload();
+      if (!leavingIntentionally) {
+        clearSession();
+        alert('This room has been closed.');
+        location.reload();
+      }
       return;
     }
     const room = normalizeRoom(snap.val());
 
     // Detect if we were kicked (our participant ID is no longer in the room)
     const stillInRoom = room.participants.some(p => p.id === currentParticipantId);
-    if (!stillInRoom) {
+    if (!stillInRoom && !leavingIntentionally) {
       clearSession();
       activeRoomRef.off('value');
       alert('You were removed from the room by the facilitator.');
@@ -214,6 +217,39 @@ async function newRound() {
 function kickParticipant(targetId) {
   if (targetId === currentParticipantId) return;
   rRef(`rooms/${currentRoomCode}/participants/${targetId}`).remove();
+}
+
+async function leaveRoom() {
+  if (!currentRoomCode || !currentParticipantId) return;
+
+  leavingIntentionally = true;
+
+  // Cancel the Firebase onDisconnect hook so it doesn't fire after we remove ourselves
+  await rRef(`rooms/${currentRoomCode}/participants/${currentParticipantId}`)
+    .onDisconnect().cancel();
+
+  const snap = await rRef(`rooms/${currentRoomCode}`).once('value');
+  const raw = snap.val();
+  const me = raw?.participants?.[currentParticipantId];
+
+  if (me?.isFacilitator) {
+    // Facilitator leaving — delete the whole room, which kicks everyone
+    await rRef(`rooms/${currentRoomCode}`).remove();
+  } else {
+    // Regular participant — just remove self
+    await rRef(`rooms/${currentRoomCode}/participants/${currentParticipantId}`).remove();
+  }
+
+  // Tear down listener and reset local state
+  if (activeRoomRef) { activeRoomRef.off('value'); activeRoomRef = null; }
+  clearSession();
+  currentParticipantId = null;
+  currentRoomCode = null;
+  leavingIntentionally = false;
+
+  // Return to setup screen
+  document.getElementById('room-panel').classList.add('hidden');
+  document.getElementById('setup-panel').classList.remove('hidden');
 }
 
 // Consensus
@@ -412,6 +448,7 @@ function initRoom() {
 
   document.getElementById('btn-reveal').addEventListener('click', revealVotes);
   document.getElementById('btn-reset').addEventListener('click', newRound);
+  document.getElementById('btn-leave').addEventListener('click', () => leaveRoom());
 
   // Restore session on page refresh
   const session = getSession();
