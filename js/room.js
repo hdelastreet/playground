@@ -1,7 +1,7 @@
-﻿// room.js â€” Phase 3: Multi-User Sync via Firebase Realtime Database
-// No server needed â€” Firebase handles real-time sync across all computers.
+﻿// room.js Phase 3: Multi-User Sync via Firebase Realtime Database
+// No server needed — Firebase handles real-time sync across all computers.
 //
-// â”€â”€ SETUP: replace the placeholder values below with your Firebase project config â”€â”€
+// ―― SETUP: replace the placeholder values below with your Firebase project config ――
 // (See the setup guide at the bottom of steps-to-build.html)
 
 const FIREBASE_CONFIG = {
@@ -14,7 +14,7 @@ const FIREBASE_CONFIG = {
   appId: "1:443595862572:web:fafe0311a75d30c2c5d789"
 };
 
-const CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '?', 'â˜•'];
+const CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'];
 const SESSION_KEY = 'scrumestimate_session';
 
 let db = null;
@@ -22,7 +22,7 @@ let currentParticipantId = null;
 let currentRoomCode = null;
 let activeRoomRef = null; // Firebase ref being listened to
 
-// â”€â”€ Firebase init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Firebase initialization and connection status handling
 
 function initFirebase() {
   if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
@@ -34,7 +34,7 @@ function initFirebase() {
   });
 }
 
-// â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Utilities
 
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -53,7 +53,7 @@ function escHtml(str) {
   );
 }
 
-// â”€â”€ Session persistence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Session persistence
 
 function getSession() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
@@ -63,7 +63,7 @@ function saveSession(participantId, roomCode) {
 }
 function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
 
-// â”€â”€ Firebase helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Firebase helpers
 
 function rRef(path) { return db.ref(path); }
 function rootUpdate(updates) { return db.ref('/').update(updates); }
@@ -83,7 +83,7 @@ function normalizeRoom(raw) {
   };
 }
 
-// â”€â”€ Real-time subscription â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Real-time subscription
 
 function subscribeToRoom(code) {
   // Detach any previous listener
@@ -116,7 +116,7 @@ function subscribeToRoom(code) {
   });
 }
 
-// â”€â”€ Room Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Room Actions
 
 async function createRoom(name) {
   setConnectionStatus('connecting');
@@ -288,11 +288,11 @@ function kickParticipant(targetId) {
   rRef(`rooms/${currentRoomCode}/participants/${targetId}`).remove();
 }
 
-// â”€â”€ Consensus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Consensus
 
 function computeConsensus(votes) {
   const numeric = votes
-    .filter(v => v !== null && v !== '?' && v !== 'â˜•')
+    .filter(v => v !== null && v !== '?' && v !== '☕')
     .map(Number).filter(n => !isNaN(n));
   if (numeric.length === 0) return { avg: null, level: 'no-votes' };
   const avg = Math.round((numeric.reduce((a, b) => a + b, 0) / numeric.length) * 10) / 10;
@@ -304,17 +304,17 @@ function computeConsensus(votes) {
   };
 }
 
-// â”€â”€ Connection status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Connection status
 
 function setConnectionStatus(status) {
   const dot = document.getElementById('conn-dot');
   const label = document.getElementById('conn-label');
   if (!dot) return;
   dot.className = 'conn-dot ' + status;
-  label.textContent = { connecting: 'Connectingâ€¦', connected: 'Connected', disconnected: 'Reconnectingâ€¦' }[status] || '';
+  label.textContent = { connecting: 'Connecting...', connected: 'Connected', disconnected: 'Reconnecting...' }[status] || '';
 }
 
-// â”€â”€ Rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Rendering
 
 function renderRoom(room) {
   const me = room.participants.find(p => p.id === currentParticipantId);
@@ -323,7 +323,7 @@ function renderRoom(room) {
 
   document.getElementById('room-code-display').textContent = room.code;
   document.getElementById('active-story-title').textContent =
-    activeStory ? activeStory.title : 'No active story â€” add one below';
+    activeStory ? activeStory.title : 'No active story — add one below';
   document.getElementById('facilitator-badge').classList.toggle('hidden', !isFacilitator);
 
   // Participant list
@@ -335,7 +335,7 @@ function renderRoom(room) {
 
     let voteHtml;
     if (room.revealed) {
-      voteHtml = `<span class="vote-badge revealed">${escHtml(p.vote ?? 'â€”')}</span>`;
+      voteHtml = `<span class="vote-badge revealed">${escHtml(p.vote ?? '—')}</span>`;
     } else {
       voteHtml = p.hasVoted
         ? `<span class="vote-badge voted">Voted</span>`
@@ -345,7 +345,7 @@ function renderRoom(room) {
     const roleTag = p.isFacilitator ? `<span class="role-tag">host</span>` : '';
     const offlineTag = p.connected === false ? `<span class="offline-tag">offline</span>` : '';
     const kickBtn = (isFacilitator && p.id !== currentParticipantId)
-      ? `<button class="btn-icon danger kick-btn" data-id="${escHtml(p.id)}" title="Remove participant">âœ•</button>`
+      ? `<button class="btn-icon danger kick-btn" data-id="${escHtml(p.id)}" title="Remove participant">❌</button>`
       : '';
 
     li.innerHTML = `
@@ -418,7 +418,7 @@ function renderStoryQueue(room) {
       ${pointsBadge}
       <span class="story-item-actions">
         ${activateBtn}
-        <button class="btn-icon danger" data-action="remove" data-id="${escHtml(story.id)}" title="Remove">âœ•</button>
+        <button class="btn-icon danger" data-action="remove" data-id="${escHtml(story.id)}" title="Remove">❌</button>
       </span>
     `;
     ul.appendChild(li);
@@ -447,7 +447,7 @@ function renderResults(room, isFacilitator) {
   if (consensus.level === 'no-votes') {
     indicator.innerHTML = `<span class="consensus-tag no-votes">No numeric votes cast</span>`;
   } else {
-    const labels = { unanimous: 'âœ” Unanimous!', close: '~ Close', split: 'âš  Split' };
+    const labels = { unanimous: '✔ Unanimous!', close: '~ Close', split: '✖ Split' };
     indicator.innerHTML = `
       Average: <strong>${consensus.avg}</strong>
       &nbsp;<span class="consensus-tag ${consensus.level}">${labels[consensus.level]}</span>
@@ -462,7 +462,7 @@ function renderResults(room, isFacilitator) {
   }
 }
 
-// â”€â”€ Form errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ―― Form errors ――
 
 function showFormError(formId, msg) {
   const form = document.getElementById(formId);
