@@ -304,7 +304,7 @@ function renderRoom(room) {
 function renderCards(room, me) {
   const deck = document.getElementById('card-deck');
   deck.innerHTML = '';
-  const disabled = room.revealed || !room.activeStoryId;
+  const disabled = room.revealed;
   CARDS.forEach(value => {
     const btn = document.createElement('button');
     btn.className = 'card' + (me && me.vote === value && !room.revealed ? ' selected' : '');
