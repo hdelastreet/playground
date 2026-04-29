@@ -345,7 +345,7 @@ function renderRoom(room) {
     const roleTag = p.isFacilitator ? `<span class="role-tag">host</span>` : '';
     const offlineTag = p.connected === false ? `<span class="offline-tag">offline</span>` : '';
     const kickBtn = (isFacilitator && p.id !== currentParticipantId)
-      ? `<button class="btn-icon danger kick-btn" data-id="${escHtml(p.id)}" title="Remove participant">❌</button>`
+      ? `<button class="btn-icon danger kick-btn" data-id="${escHtml(p.id)}" title="Remove participant">✖</button>`
       : '';
 
     li.innerHTML = `
@@ -409,7 +409,7 @@ function renderStoryQueue(room) {
     const li = document.createElement('li');
     li.className = 'story-item' + (isActive ? ' active' : '') + (isDone ? ' done' : '');
     const activateBtn = (!isDone && !isActive)
-      ? `<button class="btn-icon" data-action="activate" data-id="${escHtml(story.id)}" title="Set active">â–¶</button>`
+      ? `<button class="btn-icon" data-action="activate" data-id="${escHtml(story.id)}" title="Set active">▲</button>`
       : '';
     const pointsBadge = isDone && story.points !== null
       ? `<span class="story-points-badge">${story.points}pt</span>` : '';
@@ -418,7 +418,7 @@ function renderStoryQueue(room) {
       ${pointsBadge}
       <span class="story-item-actions">
         ${activateBtn}
-        <button class="btn-icon danger" data-action="remove" data-id="${escHtml(story.id)}" title="Remove">❌</button>
+        <button class="btn-icon danger" data-action="remove" data-id="${escHtml(story.id)}" title="Remove">✖</button>
       </span>
     `;
     ul.appendChild(li);
@@ -439,7 +439,7 @@ function renderResults(room, isFacilitator) {
   table.innerHTML = `
     <thead><tr><th>Participant</th><th>Vote</th></tr></thead>
     <tbody>${room.participants.map(p =>
-      `<tr><td>${escHtml(p.name)}</td><td class="vote-cell">${escHtml(p.vote ?? 'â€”')}</td></tr>`
+      `<tr><td>${escHtml(p.name)}</td><td class="vote-cell">${escHtml(p.vote ?? '-')}</td></tr>`
     ).join('')}</tbody>
   `;
 
@@ -478,14 +478,14 @@ function clearFormError(formId) {
   document.getElementById(formId).querySelector('.form-error')?.remove();
 }
 
-// â”€â”€ Panel transitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ―― Panel transitions ――
 
 function showRoomPanel() {
   document.getElementById('setup-panel').classList.add('hidden');
   document.getElementById('room-panel').classList.remove('hidden');
 }
 
-// â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ―― Init ――
 
 function initRoom() {
   initFirebase();
