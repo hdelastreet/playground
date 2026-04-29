@@ -338,8 +338,8 @@ function renderRoom(room) {
       voteHtml = `<span class="vote-badge revealed">${escHtml(p.vote ?? 'â€”')}</span>`;
     } else {
       voteHtml = p.hasVoted
-        ? `<span class="vote-badge voted">âœ”</span>`
-        : `<span class="vote-badge waiting">â€¦</span>`;
+        ? `<span class="vote-badge voted">Voted</span>`
+        : `<span class="vote-badge waiting">Waiting...</span>`;
     }
 
     const roleTag = p.isFacilitator ? `<span class="role-tag">host</span>` : '';
