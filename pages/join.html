@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScrumEstimate — Join a Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../index.html">ScrumEstimate</a>
+  </header>
+
+  <!-- Two ways in here: someone who clicked "Join a room" on the home page, and
+       someone following an invite link (?roomId=CODE), who arrives with the code
+       already filled in and only a name left to give. -->
+  <main class="setup-panel">
+    <div class="setup-card">
+      <h2>Join a room</h2>
+      <p class="setup-subtitle">Enter the code your facilitator shared with you.</p>
+
+      <!-- Filled in by setup.js: which room you were invited to, or why you're
+           back here after being sent out of one. Empty otherwise. -->
+      <div id="join-notice"></div>
+
+      <form id="form-join">
+        <div class="form-group">
+          <label for="input-participant-name">Your name</label>
+          <input id="input-participant-name" type="text" placeholder="e.g. Bob" maxlength="40" autocomplete="nickname" required />
+        </div>
+        <div class="form-group">
+          <label for="input-room-code">Room code</label>
+          <input id="input-room-code" type="text" placeholder="e.g. ABC123" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" class="input-code" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Join room</button>
+      </form>
+
+      <p class="setup-switch">No code yet? <a href="create.html">Create a room</a></p>
+    </div>
+  </main>
+
+  <!-- Firebase SDK (compat). Pinned by version and by subresource integrity, so a
+       swapped file on the CDN fails to execute rather than running as our code. -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"
+          integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1"
+          crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"
+          integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj"
+          crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"
+          integrity="sha384-g5H2aNdtgRBYOBLsuOAuHvUXWnw4bswmU+tYjmGc1G3JfKxl79uWwV4sQarJsLwu"
+          crossorigin="anonymous"></script>
+  <script src="../js/firebase-core.js"></script>
+  <script src="../js/setup.js"></script>
+</body>
+</html>
