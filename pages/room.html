@@ -21,11 +21,22 @@
       <div class="room-cluster">
         <span class="room-cluster-code">Room&nbsp;<strong id="room-code-display">—</strong></span>
         <button id="btn-share" class="room-cluster-btn" type="button" title="Copy the invite link">
-          <span class="room-cluster-icon" aria-hidden="true">⧉</span>
+          <!-- Lucide "copy", inlined: no CDN, works offline, nothing to SRI-pin. -->
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+          </svg>
           <span id="btn-share-label">Share</span>
         </button>
         <button id="btn-leave" class="room-cluster-btn danger" type="button" title="Leave this room">
-          <span class="room-cluster-icon" aria-hidden="true">⤶</span>
+          <!-- Lucide "log-out" -->
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" x2="9" y1="12" y2="12" />
+          </svg>
           <span>Leave</span>
         </button>
       </div>

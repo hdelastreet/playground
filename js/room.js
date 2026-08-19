@@ -446,6 +446,18 @@ function computeConsensus(votes) {
 
 // Rendering
 
+// Lucide paths, inlined as SVG markup. One icon family for the whole product,
+// no CDN: there is no build step here, the room has to survive going offline,
+// and every other third-party file we load is SRI-pinned.
+const ICON_ATTRS = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+  + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+
+const ICONS = {
+  x:     `<svg class="icon icon-xs" ${ICON_ATTRS}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+  check: `<svg class="icon icon-xs" ${ICON_ATTRS}><path d="M20 6 9 17l-5-5"/></svg>`,
+  minus: `<svg class="icon icon-xs" ${ICON_ATTRS}><path d="M5 12h14"/></svg>`,
+};
+
 // Fold the separate listener feeds back into the single room shape the renderer
 // expects. Before reveal the only vote we can fill in is our own.
 function renderIfReady() {
@@ -499,7 +511,7 @@ function renderRoom(room) {
     const roleTag = p.isFacilitator ? `<span class="role-tag">host</span>` : '';
     const offlineTag = p.connected === false ? `<span class="offline-tag">offline</span>` : '';
     const kickBtn = (isFacilitator && p.id !== currentParticipantId)
-      ? `<button class="btn-icon danger kick-btn" data-id="${escHtml(p.id)}" title="Remove participant">✖</button>`
+      ? `<button class="btn-icon danger kick-btn" data-id="${escHtml(p.id)}" title="Remove participant" aria-label="Remove ${escHtml(p.name)}">${ICONS.x}</button>`
       : '';
 
     li.innerHTML = `
@@ -560,10 +572,15 @@ function renderResults(room) {
   if (consensus.level === 'no-votes') {
     indicator.innerHTML = `<span class="consensus-tag no-votes">No numeric votes cast</span>`;
   } else {
-    const labels = { unanimous: '✔ Unanimous!', close: '~ Close', split: '✖ Split' };
+    // Icon plus word, so the state never rests on colour alone (§7).
+    const labels = {
+      unanimous: `${ICONS.check}Unanimous`,
+      close:     `${ICONS.minus}Close`,
+      split:     `${ICONS.x}Split`,
+    };
     indicator.innerHTML = `
       Average: <strong>${consensus.avg}</strong>
-      &nbsp;<span class="consensus-tag ${consensus.level}">${labels[consensus.level]}</span>
+      <span class="consensus-tag ${consensus.level}">${labels[consensus.level]}</span>
     `;
   }
 }

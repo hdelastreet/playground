@@ -1,104 +1,179 @@
-/* ── Design tokens ─────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   ScrumEstimate — Warm Precision design system
+   Implements ui-guidelines-v2.md. Token names mirror the document's
+   vocabulary (§2) so a value can be traced back to the spec.
+   ═══════════════════════════════════════════════════════════════ */
+
 :root {
-  /* Surfaces & text */
+  /* ── Color (§2) ─────────────────────────────────────────────── */
   --color-bg: #fdf7ec;
   --color-surface: #ffffff;
   --color-surface-2: #f5ede0;
+
   --color-text: #0f0d0a;
   --color-text-2: #5c5448;
   --color-text-3: #a09280;
 
-  /* Accent — the single brand color */
+  --color-border-subtle: #eee3d4;
+  --color-border: #e8d8c2;
+  --color-border-strong: #d8c8b0;
+
   --color-accent: #D07818;
   --color-accent-hover: #b86814;
-  --color-accent-tint: rgba(208,120,24,.08);
-  --color-accent-soft: rgba(208,120,24,.05);
+  --color-accent-active: #a85f12;
+  --color-accent-subtle: rgba(208,120,24,.08);
+  --color-accent-soft: rgba(208,120,24,.14);
+  /* §4 Pills specifies 0.10 literally — between subtle and soft. */
   --color-accent-pill: rgba(208,120,24,.10);
 
-  /* Borders */
-  --color-border: #e8d8c2;
-  --color-border-2: #d8c8b0;
+  /* Functional, not brand (§2). Tints are derived at the pill opacity because
+     §4 badges need a background and §2 lists only the solid values. */
+  --color-success: #2f7d4a;
+  --color-success-tint: rgba(47,125,74,.12);
+  --color-error: #dc2626;
+  --color-error-tint: rgba(220,38,38,.10);
+  --color-warning: #a66a00;
+  --color-warning-tint: rgba(166,106,0,.10);
 
-  /* Semantic status — warmed to sit in the palette.
-     Kept as a trio (positive / live / negative) because vote badges, the copy
-     confirmation, and consensus tags carry real state that a single accent
-     can't distinguish. */
-  --color-ok: #5d7c34;
-  --color-ok-text: #415a23;
-  --color-ok-tint: rgba(93,124,52,.14);
-  --color-danger: #dc2626;
-  --color-danger-text: #9f2b20;
-  --color-danger-tint: rgba(220,38,38,.10);
+  --color-focus: #D07818;
 
-  /* Radii */
-  --radius-panel: 12px;
-  --radius-btn: 8px;
-  --radius-pill: 999px;
+  /* ── Typography (§2) ───────────────────────────────────────── */
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
 
-  --shadow: 0 1px 2px rgba(92,84,72,.04), 0 4px 16px rgba(92,84,72,.06);
+  --fs-display: 48px;    --lh-display: 52px;
+  --fs-h1: 36px;         --lh-h1: 40px;
+  --fs-h2: 28px;         --lh-h2: 34px;
+  --fs-h3: 22px;         --lh-h3: 28px;
+  --fs-body: 16px;       --lh-body: 24px;
+  --fs-body-sm: 14px;    --lh-body-sm: 20px;   /* Label = same size, weight 600 */
+  --fs-caption: 12px;    --lh-caption: 16px;
+  --fs-hero-value: 40px; --lh-hero-value: 44px;
+  --fs-stat: 32px;       --lh-stat: 36px;
 
-  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
-  --font-body: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+  /* ── Spacing (§2) ──────────────────────────────────────────── */
+  --space-4: 4px;   --space-6: 6px;   --space-8: 8px;   --space-12: 12px;
+  --space-16: 16px; --space-20: 20px; --space-24: 24px; --space-32: 32px;
+  --space-40: 40px; --space-48: 48px; --space-64: 64px; --space-80: 80px;
+  --space-96: 96px;
+
+  /* ── Radius (§2) ───────────────────────────────────────────── */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+
+  /* ── Elevation (§2) — borders first, shadows second ────────── */
+  --shadow-sm: 0 1px 2px rgba(15,13,10,.04);
+  --shadow-md: 0 4px 16px rgba(15,13,10,.07);
+  --shadow-lg: 0 12px 40px rgba(15,13,10,.10);
+
+  /* ── Motion (§6) ───────────────────────────────────────────── */
+  --motion-fast: 100ms;
+  --motion-normal: 180ms;
+  --motion-slow: 280ms;
+
+  /* Layout: the top bar is a fixed-height band that the centred panels
+     subtract from, so it is a token rather than a magic number. */
+  --topbar-h: 56px;
 }
 
 /* ── Reset ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
   background: var(--color-bg);
   color: var(--color-text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 a { color: inherit; text-decoration: none; }
-ol, ul { padding-left: 1.25rem; }
+ol, ul { padding-left: var(--space-20); }
 h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
+
+/* Focus-visible is never removed (§3, §7). One accent ring for the whole
+   product; components sitting flush inside a bordered group override the
+   offset so the ring is not clipped. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── Icons (§2) — one family, Lucide, inlined as SVG ─────────
+   Inlined rather than pulled from a CDN: there is no build step, the app has
+   to work offline, and every other third-party file here is SRI-pinned. */
+.icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.icon-xs { width: 14px; height: 14px; }
 
 /* ── Top bar ────────────────────────────────────────────────── */
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: var(--space-24);
   flex-wrap: wrap;
-  padding: .9rem 2rem;
+  min-height: var(--topbar-h);
+  padding: var(--space-12) var(--space-32);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 .topbar .brand {
   font-family: var(--font-display);
-  font-size: 1.2rem;
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
   font-weight: 800;
   color: var(--color-accent);
   letter-spacing: -.5px;
   flex-shrink: 0;
+  transition: color var(--motion-fast) ease;
 }
 .topbar .brand:hover { color: var(--color-accent-hover); }
 
 /* Room controls — shown in the top bar only once you are in a room */
-.topbar-room { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.topbar-room { display: flex; align-items: center; gap: var(--space-16); flex-wrap: wrap; }
 
-/* ── Buttons ───────────────────────────────────────────────── */
+/* ── Buttons (§4) ──────────────────────────────────────────── */
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
   font-family: var(--font-body);
-  padding: .5rem 1.25rem;
-  border-radius: var(--radius-btn);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
   font-weight: 600;
-  font-size: .95rem;
-  cursor: pointer;
-  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
+  padding: var(--space-8) var(--space-20);
+  border-radius: var(--radius-sm);
   border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: background var(--motion-fast) ease,
+              border-color var(--motion-fast) ease,
+              color var(--motion-fast) ease,
+              transform var(--motion-fast) ease;
 }
 .btn:active { transform: scale(.97); }
+
 .btn-primary { background: var(--color-accent); color: #fff; }
-.btn-primary:hover { background: var(--color-accent-hover); }
+.btn-primary:hover:not(:disabled)  { background: var(--color-accent-hover); }
+.btn-primary:active:not(:disabled) { background: var(--color-accent-active); }
+
 .btn-secondary {
-  background: transparent;
+  background: var(--color-surface);
   color: var(--color-text-2);
   border-color: var(--color-border);
 }
-.btn-secondary:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.btn-secondary:hover:not(:disabled) { border-color: var(--color-accent); color: var(--color-accent); }
+
+/* Disabled: contrast drops, text stays legible (§3). */
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
 /* ── Hero ──────────────────────────────────────────────────── */
 .hero {
@@ -107,45 +182,78 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 1.2rem;
-  padding: 5rem 2rem;
+  gap: var(--space-20);
+  padding: var(--space-80) var(--space-32);
 }
-.hero h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; letter-spacing: -.02em; }
-.hero p { font-size: 1.1rem; color: var(--color-text-2); max-width: 480px; }
-.cta-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-top: .5rem; }
+.hero h1 {
+  font-size: var(--fs-display);
+  line-height: var(--lh-display);
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.hero p { color: var(--color-text-2); max-width: 480px; }
+.cta-group {
+  display: flex;
+  gap: var(--space-16);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--space-8);
+}
 
 /* ── Utility ───────────────────────────────────────────────── */
 .hidden { display: none !important; }
-.btn-full { width: 100%; text-align: center; }
+.btn-full { width: 100%; }
+
+/* Announce transient results to screen readers without taking up bar space. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
 /* ── Setup panel ───────────────────────────────────────────── */
 .setup-panel {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 57px);
-  padding: 2rem;
+  min-height: calc(100vh - var(--topbar-h));
+  padding: var(--space-32);
 }
+/* Level 1 surface: border, no shadow (§2). */
 .setup-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-panel);
-  box-shadow: var(--shadow);
-  padding: 2.25rem 2.5rem;
+  border-radius: var(--radius-md);
+  padding: var(--space-32) var(--space-40);
   width: 100%;
   max-width: 420px;
 }
-.setup-card h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: .3rem; letter-spacing: -.01em; }
-.setup-subtitle { color: var(--color-text-2); font-size: .92rem; margin-bottom: 1.5rem; }
+.setup-card h2 {
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
+  font-weight: 700;
+  letter-spacing: -.01em;
+  margin-bottom: var(--space-6);
+}
+.setup-subtitle {
+  color: var(--color-text-2);
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
+  margin-bottom: var(--space-24);
+}
 
 /* Creating and joining are separate pages, so a setup card carries one form and
    one quiet link to the other page — not a segmented control that invites you to
    switch mid-thought. */
 .setup-switch {
-  margin-top: 1.25rem;
-  padding-top: 1.1rem;
-  border-top: 1px solid var(--color-border);
-  font-size: .85rem;
+  margin-top: var(--space-20);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
   color: var(--color-text-2);
   text-align: center;
 }
@@ -156,16 +264,17 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
    thing you came for), or what happened to the room you were just in (quiet —
    context, not an error you made). */
 .setup-notice {
-  padding: .7rem .85rem;
-  margin-bottom: 1.25rem;
+  padding: var(--space-12);
+  margin-bottom: var(--space-20);
   border: 1.5px solid var(--color-accent);
-  border-radius: var(--radius-btn);
-  background: var(--color-accent-tint);
-  font-size: .875rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-subtle);
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
   font-weight: 600;
 }
 .setup-notice.warning {
-  border-color: var(--color-border-2);
+  border-color: var(--color-border-strong);
   background: var(--color-surface-2);
   color: var(--color-text-2);
   font-weight: 400;
@@ -174,29 +283,39 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
 /* A room code gets read aloud and retyped, so space it out like a code. */
 .input-code { text-transform: uppercase; letter-spacing: .12em; font-weight: 600; }
 
-.form-group { display: flex; flex-direction: column; gap: .35rem; margin-bottom: 1rem; }
-.form-group label { font-size: .85rem; font-weight: 600; color: var(--color-text-2); }
+/* ── Inputs (§4) ───────────────────────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-bottom: var(--space-16);
+}
+.form-group label {
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
+  font-weight: 600;
+  color: var(--color-text-2);
+}
 .form-group input {
-  padding: .6rem .85rem;
-  border: 1.5px solid var(--color-border-2);
-  border-radius: var(--radius-btn);
-  font-size: .95rem;
+  padding: var(--space-12);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   font-family: var(--font-body);
-  background: var(--color-bg);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  background: var(--color-surface);
   color: var(--color-text);
-  transition: border-color .15s ease, background .15s ease;
+  transition: border-color var(--motion-fast) ease;
   width: 100%;
 }
 .form-group input::placeholder { color: var(--color-text-3); }
-.form-group input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  background: var(--color-accent-soft);
-}
+.form-group input:hover { border-color: var(--color-text-3); }
+.form-group input:focus { border-color: var(--color-accent); }
 .form-error {
-  font-size: .85rem;
-  color: var(--color-danger);
-  margin-bottom: .75rem;
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
+  color: var(--color-error);
+  margin-bottom: var(--space-12);
 }
 
 /* ── Room cluster (inside the top bar) ──────────────────────
@@ -206,8 +325,8 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
 .room-cluster {
   display: flex;
   align-items: stretch;
-  border: 1px solid var(--color-border-2);
-  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   background: var(--color-surface-2);
   overflow: hidden;
   flex-shrink: 0;
@@ -215,10 +334,11 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
 .room-cluster-code {
   display: flex;
   align-items: center;
-  font-size: .9rem;
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
   font-weight: 600;
   color: var(--color-text-2);
-  padding: .35rem .8rem;
+  padding: var(--space-6) var(--space-12);
   letter-spacing: .05em;
   white-space: nowrap;
 }
@@ -226,275 +346,295 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   font-family: var(--font-display);
   font-weight: 800;
   color: var(--color-accent);
-  font-size: 1rem;
+  font-size: var(--fs-body);
   letter-spacing: .12em;
 }
 .room-cluster-btn {
   display: flex;
   align-items: center;
-  gap: .35rem;
+  gap: var(--space-6);
   font-family: var(--font-body);
-  font-size: .82rem;
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
   font-weight: 600;
   color: var(--color-text-2);
   background: var(--color-surface);
   border: none;
   border-left: 1px solid var(--color-border);
-  padding: .35rem .8rem;
+  padding: var(--space-6) var(--space-12);
   cursor: pointer;
   white-space: nowrap;
-  transition: background .15s ease, color .15s ease;
+  transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
 }
-.room-cluster-btn:hover        { background: var(--color-accent-tint); color: var(--color-accent); }
-.room-cluster-btn.danger:hover { background: var(--color-danger-tint); color: var(--color-danger); }
-.room-cluster-btn:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: -2px;
-}
+.room-cluster-btn:hover        { background: var(--color-accent-subtle); color: var(--color-accent); }
+.room-cluster-btn.danger:hover { background: var(--color-error-tint); color: var(--color-error); }
+/* Flush inside a cluster that clips overflow — so the ring goes inward. */
+.room-cluster-btn:focus-visible { outline-offset: -2px; }
 /* Copy confirmation — the label swaps to "Copied!" for a beat. */
 .room-cluster-btn.copied,
-.room-cluster-btn.copied:hover { background: var(--color-ok-tint); color: var(--color-ok-text); }
-.room-cluster-icon { font-size: .9rem; line-height: 1; }
+.room-cluster-btn.copied:hover { background: var(--color-success-tint); color: var(--color-success); }
 
-/* Announce the copy result to screen readers without taking up bar space. */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-/* ── Room layout ───────────────────────────────────────────── */
+/* ── Room layout (§5) ──────────────────────────────────────── */
 .room-layout {
   display: grid;
   grid-template-columns: 280px 1fr;
-  gap: 1.5rem;
+  gap: var(--space-24);
   max-width: 1100px;
-  margin: 1.5rem auto;
-  padding: 0 1.5rem 3rem;
+  margin: var(--space-24) auto;
+  padding: 0 var(--space-24) var(--space-48);
   align-items: start;
 }
-.room-sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
-.room-main { display: flex; flex-direction: column; gap: 1.25rem; }
+.room-sidebar { display: flex; flex-direction: column; gap: var(--space-20); }
+.room-main { display: flex; flex-direction: column; gap: var(--space-20); }
 
-/* ── Panel ─────────────────────────────────────────────────── */
+/* ── Panel (§4) — level 1: border, no shadow ───────────────── */
 .panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-panel);
-  box-shadow: var(--shadow);
-  padding: 1.25rem 1.4rem;
+  border-radius: var(--radius-md);
+  padding: var(--space-20) var(--space-24);
 }
 .panel-title {
   font-family: var(--font-body);
-  font-size: .8rem;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .07em;
   color: var(--color-text-3);
-  margin-bottom: 1rem;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: .6rem;
+  margin-bottom: var(--space-16);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: var(--space-8);
 }
 
 /* ── Participant list ──────────────────────────────────────── */
-.participant-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+.participant-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
 .participant-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: .9rem;
+  gap: var(--space-8);
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
 }
-.participant-name { display: flex; align-items: center; gap: .4rem; font-weight: 500; }
-.role-tag {
-  font-size: .7rem;
+.participant-name { display: flex; align-items: center; gap: var(--space-6); font-weight: 500; }
+.participant-right { display: flex; align-items: center; gap: var(--space-6); }
+
+/* ── Pills / badges (§4) ───────────────────────────────────── */
+.role-tag, .you-tag, .offline-tag, .vote-badge, .consensus-tag {
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
   font-weight: 600;
-  padding: .1rem .5rem;
-  border-radius: var(--radius-pill);
-  background: var(--color-accent-pill);
-  color: var(--color-accent);
+  border-radius: var(--radius-full);
+  padding: var(--space-4) var(--space-8);
+  white-space: nowrap;
 }
+.role-tag { background: var(--color-accent-pill); color: var(--color-accent); }
 /* "you" marker — muted on purpose, so it identifies your row without
    competing with the accent "host" tag it usually sits next to. This is where
    the facilitator/member state lives now that the top bar no longer carries it. */
 .you-tag {
-  font-size: .7rem;
-  font-weight: 600;
-  padding: .1rem .5rem;
-  border-radius: var(--radius-pill);
   background: var(--color-surface-2);
   color: var(--color-text-3);
   border: 1px solid var(--color-border);
 }
-.vote-badge {
-  font-size: .8rem;
-  font-weight: 600;
-  padding: .2rem .55rem;
-  border-radius: var(--radius-pill);
-  min-width: 2rem;
-  text-align: center;
-}
-.vote-badge.voted   { background: var(--color-ok-tint); color: var(--color-ok-text); }
+.offline-tag { background: var(--color-error-tint); color: var(--color-error); }
+
+.vote-badge { min-width: 32px; text-align: center; }
+.vote-badge.voted   { background: var(--color-success-tint); color: var(--color-success); }
 .vote-badge.waiting { background: var(--color-surface-2); color: var(--color-text-3); }
 .vote-badge.revealed {
   font-family: var(--font-display);
   font-weight: 800;
+  font-size: var(--fs-body);
+  line-height: var(--lh-caption);
   background: var(--color-accent-pill);
   color: var(--color-accent);
-  font-size: .95rem;
 }
 
 /* ── Icon buttons ──────────────────────────────────────────── */
 .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: .15rem .4rem;
-  font-size: .8rem;
+  border-radius: var(--radius-xs);
+  padding: var(--space-4);
   cursor: pointer;
   color: var(--color-text-3);
-  transition: background .15s ease, color .15s ease, border-color .15s ease;
+  transition: background var(--motion-fast) ease,
+              color var(--motion-fast) ease,
+              border-color var(--motion-fast) ease;
 }
-.btn-icon:hover        { background: var(--color-accent-tint); color: var(--color-accent); border-color: var(--color-accent); }
-.btn-icon.danger:hover { background: var(--color-danger-tint); color: var(--color-danger); border-color: var(--color-danger); }
+.btn-icon:hover        { background: var(--color-accent-subtle); color: var(--color-accent); border-color: var(--color-accent); }
+.btn-icon.danger:hover { background: var(--color-error-tint); color: var(--color-error); border-color: var(--color-error); }
 
 /* ── Card deck ─────────────────────────────────────────────── */
-.card-deck { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .25rem; }
+.card-deck {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+  margin-top: var(--space-4);
+}
+/* The one element in the product that genuinely gets picked up, so it is the
+   one place that lifts. Flat at rest; standard medium shadow while raised. */
 .card {
   width: 60px;
   height: 84px;
   border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-btn);
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
   font-weight: 700;
   color: var(--color-text);
   cursor: pointer;
-  transition: border-color .15s ease, transform .1s ease, box-shadow .15s ease, background .15s ease, color .15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(92,84,72,.06);
+  transition: border-color var(--motion-fast) ease,
+              background var(--motion-fast) ease,
+              color var(--motion-fast) ease,
+              transform var(--motion-fast) ease,
+              box-shadow var(--motion-fast) ease;
 }
 .card:hover:not(:disabled) {
   border-color: var(--color-accent);
   color: var(--color-accent);
-  background: var(--color-accent-soft);
+  background: var(--color-accent-subtle);
   transform: translateY(-4px);
-  box-shadow: 0 6px 18px rgba(208,120,24,.16);
+  box-shadow: var(--shadow-md);
 }
 .card.selected {
   border-color: var(--color-accent);
   background: var(--color-accent);
   color: #fff;
   transform: translateY(-4px);
-  box-shadow: 0 6px 18px rgba(208,120,24,.28);
+  box-shadow: var(--shadow-md);
 }
-.card:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.card:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
 
 /* ── Facilitator controls ──────────────────────────────────── */
-.facilitator-controls { display: flex; gap: .75rem; flex-wrap: wrap; }
+.facilitator-controls { display: flex; gap: var(--space-12); flex-wrap: wrap; }
 
 /* ── Results ───────────────────────────────────────────────── */
-.results-table { width: 100%; border-collapse: collapse; font-size: .92rem; margin-bottom: 1rem; }
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
+  margin-bottom: var(--space-16);
+}
 .results-table th {
   text-align: left;
-  font-size: .78rem;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .06em;
   color: var(--color-text-3);
-  padding: .4rem .6rem;
-  border-bottom: 1px solid var(--color-border-2);
+  padding: var(--space-6) var(--space-8);
+  border-bottom: 1px solid var(--color-border-strong);
 }
-.results-table td { padding: .55rem .6rem; border-bottom: 1px solid var(--color-border); }
+.results-table td { padding: var(--space-8); border-bottom: 1px solid var(--color-border-subtle); }
 .results-table tbody tr:nth-child(even) { background: var(--color-surface-2); }
 .results-table tr:last-child td { border-bottom: none; }
 .vote-cell {
   font-family: var(--font-display);
   font-weight: 800;
   color: var(--color-accent);
-  font-size: 1.05rem;
+  font-size: var(--fs-body);
 }
 .consensus-indicator {
-  font-size: .95rem;
   color: var(--color-text-2);
   display: flex;
   align-items: center;
-  gap: .75rem;
+  gap: var(--space-12);
   flex-wrap: wrap;
 }
 .consensus-indicator strong {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.45rem;
+  font-weight: 700;
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
   color: var(--color-accent);
 }
 .consensus-tag {
-  display: inline-block;
-  padding: .25rem .625rem;
-  border-radius: var(--radius-pill);
-  font-size: .78rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
 }
-.consensus-tag.unanimous { background: var(--color-ok-tint); color: var(--color-ok-text); }
+.consensus-tag.unanimous { background: var(--color-success-tint); color: var(--color-success); }
 .consensus-tag.close     { background: var(--color-accent-pill); color: var(--color-accent); }
-.consensus-tag.split     { background: var(--color-danger-tint); color: var(--color-danger-text); }
+.consensus-tag.split     { background: var(--color-warning-tint); color: var(--color-warning); }
 .consensus-tag.no-votes  { background: var(--color-surface-2); color: var(--color-text-3); }
 
 /* ── Offline / disconnected participants ───────────────────── */
 .participant-item.disconnected { opacity: .5; }
-.offline-tag {
-  font-size: .7rem;
-  font-weight: 600;
-  padding: .1rem .45rem;
-  border-radius: var(--radius-pill);
-  background: var(--color-danger-tint);
-  color: var(--color-danger-text);
-  margin-left: .3rem;
-}
-.participant-right { display: flex; align-items: center; gap: .4rem; }
 
 /* ── Room page: connecting state ───────────────────────────── */
-/* The room page has no form — you arrive already in a room — so this holds the
-   screen for the one round-trip that restoring the session takes. */
+/* The room page has no form — you arrive here already in a room — so this holds
+   the screen for the one round-trip that restoring the session takes. */
 .room-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 57px);
-  padding: 2rem;
+  min-height: calc(100vh - var(--topbar-h));
+  padding: var(--space-32);
   color: var(--color-text-3);
-  font-size: .95rem;
 }
 
 /* ── Results placeholder page ──────────────────────────────── */
 .room-placeholder {
   max-width: 560px;
-  margin: 4rem auto;
-  padding: 2.25rem 2.5rem;
+  margin: var(--space-64) auto;
+  padding: var(--space-32) var(--space-40);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-panel);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-md);
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-16);
 }
-.room-placeholder h2 { font-size: 2rem; font-weight: 800; letter-spacing: -.01em; }
+.room-placeholder h2 {
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
 .room-placeholder p { color: var(--color-text-2); }
 
-/* ── Responsive ────────────────────────────────────────────── */
+/* ── Responsive (§5) ───────────────────────────────────────── */
 @media (max-width: 760px) {
-  .hero h1 { font-size: 1.7rem; }
-  .topbar { padding: .75rem 1rem; }
-  .room-layout { grid-template-columns: 1fr; }
-  .setup-card { padding: 1.5rem 1.25rem; }
-  .card { width: 52px; height: 72px; font-size: 1.1rem; }
-  .room-placeholder { margin: 2rem 1rem; padding: 1.5rem 1.25rem; }
+  .hero { padding: var(--space-48) var(--space-24); }
+  .hero h1 { font-size: var(--fs-h1); line-height: var(--lh-h1); }
+  .topbar { padding: var(--space-12) var(--space-16); }
+  .room-layout { grid-template-columns: 1fr; padding: 0 var(--space-16) var(--space-32); }
+  .setup-panel { padding: var(--space-16); }
+  .setup-card { padding: var(--space-24) var(--space-20); }
+  .room-placeholder { margin: var(--space-32) var(--space-16); padding: var(--space-24) var(--space-20); }
+}
+
+/* ── Reduced motion (§6, §7) ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* State still reads through border, fill and colour — just without travel. */
+  .card:hover:not(:disabled),
+  .card.selected { transform: none; }
+  .btn:active { transform: none; }
 }
