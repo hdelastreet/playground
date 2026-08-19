@@ -1,222 +1,207 @@
-﻿// room.js Phase 3: Multi-User Sync via Firebase Realtime Database
-// No server needed — Firebase handles real-time sync across all computers.
+// room.js — the estimation room itself: live sync, voting, reveal, results.
 //
-// ―― SETUP: replace the placeholder values below with your Firebase project config ――
-// (See the setup guide at the bottom of steps-to-build.html)
-
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCQYfUpOgKUw1sCdbXHc7zCav3SgSRE7Tg",
-  authDomain: "estimateroom-97b7b.firebaseapp.com",
-  databaseURL: "https://estimateroom-97b7b-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "estimateroom-97b7b",
-  storageBucket: "estimateroom-97b7b.firebasestorage.app",
-  messagingSenderId: "443595862572",
-  appId: "1:443595862572:web:fafe0311a75d30c2c5d789"
-};
+// This page assumes you are already in a room. Getting in is create.html /
+// join.html's job (see setup.js); this file only ever restores the session those
+// pages wrote — the same path a refresh takes. Anyone arriving without one is
+// sent to the join page, with a notice saying why if we know.
+//
+// Access control lives in database.rules.json, not in this file. Everything the
+// browser does here is assumed to be forgeable; the rules are what actually
+// enforce "only the facilitator reveals" and "nobody reads a vote early".
 
 const CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'];
-const SESSION_KEY = 'scrumestimate_session';
 
-let db = null;
-let currentParticipantId = null;
-let currentRoomCode = null;
-let activeRoomRef = null; // Firebase ref being listened to
+const HOME_PAGE = '../index.html';
+const JOIN_PAGE = 'join.html';
+
 let leavingIntentionally = false;
 
-// Firebase initialization and connection status handling
-
-function initFirebase() {
-  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-  db = firebase.database();
-
-  // Drive the connection status dot from Firebase's own connection state
-  db.ref('.info/connected').on('value', snap => {
-    setConnectionStatus(snap.val() ? 'connected' : 'disconnected');
-  });
-}
-
-// Utilities
-
-function generateRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
-
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function escHtml(str) {
-  return String(str).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
-  );
-}
-
-// Session persistence
-
-function getSession() {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
-}
-function saveSession(participantId, roomCode) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ participantId, roomCode }));
-}
-function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
-
-// Firebase helpers
-
-function rRef(path) { return db.ref(path); }
-function rootUpdate(updates) { return db.ref('/').update(updates); }
-
-// Convert Firebase's key-value objects to sorted arrays
-function normalizeRoom(raw) {
-  const participants = Object.values(raw.participants || {})
-    .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
-  return {
-    code: raw.code,
-    revealed: !!raw.revealed,
-    participants,
-  };
-}
+// Live room state, assembled from several listeners (see subscribeToRoom)
+let roomMeta = null;
+let roomParticipants = [];
+let participantsLoaded = false;
+let roomVotes = {};           // only populated once votes are revealed
+let myVote = null;            // our own vote, readable before reveal
 
 // Real-time subscription
+//
+// The room is read through three separate listeners rather than one on
+// `rooms/<code>`, because read permission in Firebase cascades downward: a
+// single listener that high would carry read access to the votes with it, which
+// is exactly what has to stay closed until reveal.
+
+let roomListeners = [];
+let votesRef = null;
+let votesCb = null;
+
+function listen(ref, cb, errCb) {
+  const bound = ref.on('value', cb, errCb || (() => {}));
+  roomListeners.push({ ref, cb: bound });
+}
+
+function detachVotesListener() {
+  if (votesRef) { votesRef.off('value', votesCb); votesRef = null; votesCb = null; }
+}
+
+function detachRoomListeners() {
+  roomListeners.forEach(({ ref, cb }) => ref.off('value', cb));
+  roomListeners = [];
+  detachVotesListener();
+}
 
 function subscribeToRoom(code) {
-  // Detach any previous listener
-  if (activeRoomRef) activeRoomRef.off('value');
+  detachRoomListeners();
+  roomMeta = null;
+  roomParticipants = [];
+  participantsLoaded = false;
+  roomVotes = {};
+  myVote = null;
 
-  activeRoomRef = rRef(`rooms/${code}`);
-  activeRoomRef.on('value', snap => {
-    if (!snap.exists()) {
-      if (!leavingIntentionally) {
-        clearSession();
-        alert('This room has been closed.');
-        location.reload();
-      }
+  listen(rRef(`rooms/${code}/meta`), snap => {
+    const meta = snap.val();
+    if (!meta) { handleRoomClosed(); return; }
+    roomMeta = meta;
+    syncVotesListener(code, !!meta.revealed);
+    renderIfReady();
+  });
+
+  listen(rRef(`rooms/${code}/participants`), snap => {
+    const raw = snap.val();
+    roomParticipants = Object.values(raw || {})
+      .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+    participantsLoaded = true;
+
+    // An empty participants node means the room is being torn down; let the
+    // meta listener report that instead, so we don't cry "kicked" on shutdown.
+    if (raw && !roomParticipants.some(p => p.id === currentParticipantId) && !leavingIntentionally) {
+      handleRemoved('removed');
       return;
     }
-    const room = normalizeRoom(snap.val());
+    renderIfReady();
+  });
 
-    // Detect if we were kicked (our participant ID is no longer in the room)
-    const stillInRoom = room.participants.some(p => p.id === currentParticipantId);
-    if (!stillInRoom && !leavingIntentionally) {
-      clearSession();
-      activeRoomRef.off('value');
-      alert('You were removed from the room by the facilitator.');
-      location.reload();
-      return;
-    }
-
-    if (document.getElementById('room-panel').classList.contains('hidden')) {
-      showRoomPanel();
-    }
-    renderRoom(room);
+  // Our own vote. Readable before reveal because the rules grant read on
+  // exactly this one child to its owner — everyone else's stays closed.
+  listen(rRef(`rooms/${code}/votes/${currentParticipantId}`), snap => {
+    myVote = snap.val();
+    renderIfReady();
   });
 }
 
-// Room Actions
-
-async function createRoom(name) {
-  setConnectionStatus('connecting');
-  let code;
-  for (let i = 0; i < 10; i++) {
-    code = generateRoomCode();
-    const snap = await rRef(`rooms/${code}`).once('value');
-    if (!snap.exists()) break;
+// Attach to the full vote list only while votes are revealed. Outside that
+// window the rules deny the read, so holding the listener open would just
+// produce permission errors.
+function syncVotesListener(code, revealed) {
+  if (revealed && !votesRef) {
+    votesRef = rRef(`rooms/${code}/votes`);
+    votesCb = votesRef.on('value',
+      snap => { roomVotes = snap.val() || {}; renderIfReady(); },
+      () => { detachVotesListener(); roomVotes = {}; renderIfReady(); }
+    );
+  } else if (!revealed && votesRef) {
+    detachVotesListener();
+    roomVotes = {};
   }
-
-  const participantId = generateId();
-  currentParticipantId = participantId;
-  currentRoomCode = code;
-  saveSession(participantId, code);
-
-  await rRef(`rooms/${code}`).set({
-    code,
-    revealed: false,
-    participants: {
-      [participantId]: {
-        id: participantId, name, isFacilitator: true,
-        hasVoted: false, vote: null, connected: true, joinedAt: Date.now(),
-      },
-    },
-  });
-
-  // Auto-mark offline on unexpected disconnect
-  rRef(`rooms/${code}/participants/${participantId}`)
-    .onDisconnect().update({ connected: false });
-
-  subscribeToRoom(code);
 }
 
-async function joinRoom(code, name) {
-  setConnectionStatus('connecting');
-  const snap = await rRef(`rooms/${code}`).once('value');
-  if (!snap.exists()) {
-    showFormError('form-join', 'Room not found. Check the code and try again.');
-    setConnectionStatus('disconnected');
-    return;
-  }
-
-  const raw = snap.val();
-
-  // Restore session (page refresh)
-  const session = getSession();
-  if (session && session.roomCode === code && raw.participants?.[session.participantId]) {
-    currentParticipantId = session.participantId;
-    currentRoomCode = code;
-    await rRef(`rooms/${code}/participants/${currentParticipantId}`).update({ connected: true });
-    rRef(`rooms/${code}/participants/${currentParticipantId}`)
-      .onDisconnect().update({ connected: false });
-    subscribeToRoom(code);
-    return;
-  }
-
-  const participantId = generateId();
-  currentParticipantId = participantId;
-  currentRoomCode = code;
-  saveSession(participantId, code);
-
-  await rRef(`rooms/${code}/participants/${participantId}`).set({
-    id: participantId, name, isFacilitator: false,
-    hasVoted: false, vote: null, connected: true, joinedAt: Date.now(),
-  });
-
-  rRef(`rooms/${code}/participants/${participantId}`)
-    .onDisconnect().update({ connected: false });
-
-  subscribeToRoom(code);
+function handleRoomClosed() {
+  if (leavingIntentionally) return;
+  handleRemoved('closed');
 }
+
+// Losing the room is not something the user did wrong, so it doesn't get an
+// alert box: tear down, then hand them the join page with the reason on it.
+function handleRemoved(reason) {
+  const code = currentRoomCode;
+  detachRoomListeners();
+  clearSession();
+  location.replace(`${JOIN_PAGE}?roomId=${encodeURIComponent(code || '')}&reason=${reason}`);
+}
+
+// Entering the room
+//
+// Both the "I just created or joined it" case and the "I refreshed the page"
+// case come through here. It only works while we still hold the auth uid that
+// owns the participant node — otherwise the rules would reject our writes, so we
+// send the user back to the join form instead of half-joining.
+//
+// Returns null on success, or the reason the session could not be used.
+async function restoreSession(session) {
+  try {
+    await ensureAuth();
+  } catch {
+    return 'session';
+  }
+
+  const meta = (await rRef(`rooms/${session.roomCode}/meta`).once('value')).val();
+  if (!meta) {
+    clearSession();
+    return 'closed';
+  }
+  if (isStale(meta)) {
+    sweepStaleRoom(session.roomCode);
+    clearSession();
+    return 'expired';
+  }
+
+  const pRef = rRef(`rooms/${session.roomCode}/participants/${session.participantId}`);
+  const me = (await pRef.once('value')).val();
+  if (!me || me.ownerUid !== currentUid) {
+    clearSession();
+    return 'session';
+  }
+
+  currentParticipantId = session.participantId;
+  currentRoomCode = session.roomCode;
+
+  // Auto-mark offline on unexpected disconnect. Installed here rather than at
+  // create/join time, because navigating from those pages to this one would have
+  // fired it straight away.
+  await pRef.update({ connected: true });
+  pRef.onDisconnect().update({ connected: false });
+
+  subscribeToRoom(session.roomCode);
+  return null;
+}
+
+// Room actions
 
 async function vote(value) {
-  const revealedSnap = await rRef(`rooms/${currentRoomCode}/revealed`).once('value');
-  if (revealedSnap.val()) return;
-  const pRef = rRef(`rooms/${currentRoomCode}/participants/${currentParticipantId}`);
-  const voteSnap = await pRef.child('vote').once('value');
-  if (voteSnap.val() === value) {
-    await pRef.update({ vote: null, hasVoted: false });
-  } else {
-    await pRef.update({ vote: value, hasVoted: true });
-  }
+  if (!currentRoomCode || !currentParticipantId) return;
+  if (roomMeta && roomMeta.revealed) return;
+
+  const next = (myVote === value) ? null : value;
+
+  // The vote goes to a node nobody else can read yet; only the fact that we
+  // voted is public, which is all the participant list needs to show.
+  await rRef(`rooms/${currentRoomCode}/votes/${currentParticipantId}`).set(next);
+  await rRef(`rooms/${currentRoomCode}/participants/${currentParticipantId}`)
+    .update({ hasVoted: next !== null });
+  touchRoom();
 }
 
 function revealVotes() {
-  rRef(`rooms/${currentRoomCode}`).update({ revealed: true });
+  rRef(`rooms/${currentRoomCode}/meta`)
+    .update({ revealed: true, lastActiveAt: serverTime() });
 }
 
-async function newRound() {
-  const pSnap = await rRef(`rooms/${currentRoomCode}/participants`).once('value');
-  const updates = { [`rooms/${currentRoomCode}/revealed`]: false };
-  pSnap.forEach(child => {
-    updates[`rooms/${currentRoomCode}/participants/${child.key}/vote`] = null;
-    updates[`rooms/${currentRoomCode}/participants/${child.key}/hasVoted`] = false;
-  });
-  rootUpdate(updates);
+function newRound() {
+  const updates = {
+    'meta/revealed': false,
+    'meta/lastActiveAt': serverTime(),
+    votes: null,
+  };
+  roomParticipants.forEach(p => { updates[`participants/${p.id}/hasVoted`] = false; });
+  rRef(`rooms/${currentRoomCode}`).update(updates);
 }
 
 function kickParticipant(targetId) {
   if (targetId === currentParticipantId) return;
-  rRef(`rooms/${currentRoomCode}/participants/${targetId}`).remove();
+  rRef(`rooms/${currentRoomCode}`).update({
+    [`participants/${targetId}`]: null,
+    [`votes/${targetId}`]: null,
+    'meta/lastActiveAt': serverTime(),
+  });
 }
 
 async function leaveRoom() {
@@ -228,28 +213,95 @@ async function leaveRoom() {
   await rRef(`rooms/${currentRoomCode}/participants/${currentParticipantId}`)
     .onDisconnect().cancel();
 
-  const snap = await rRef(`rooms/${currentRoomCode}`).once('value');
-  const raw = snap.val();
-  const me = raw?.participants?.[currentParticipantId];
-
-  if (me?.isFacilitator) {
+  if (amFacilitator()) {
     // Facilitator leaving — delete the whole room, which kicks everyone
     await rRef(`rooms/${currentRoomCode}`).remove();
   } else {
-    // Regular participant — just remove self
+    // Regular participant — remove self, and our vote along with us
+    await rRef(`rooms/${currentRoomCode}/votes/${currentParticipantId}`).remove().catch(() => {});
     await rRef(`rooms/${currentRoomCode}/participants/${currentParticipantId}`).remove();
   }
 
-  // Tear down listener and reset local state
-  if (activeRoomRef) { activeRoomRef.off('value'); activeRoomRef = null; }
+  // Tear down listeners and hand the browser back to the home page — leaving a
+  // room is a way out of the app, not a trip back to a form.
+  detachRoomListeners();
   clearSession();
-  currentParticipantId = null;
-  currentRoomCode = null;
-  leavingIntentionally = false;
+  location.replace(HOME_PAGE);
+}
 
-  // Return to setup screen
-  document.getElementById('room-panel').classList.add('hidden');
-  document.getElementById('setup-panel').classList.remove('hidden');
+// Who hosts the room comes from the room's facilitatorUid, never from a flag on
+// the participant node — a flag there would be writable by the person it grants.
+function amFacilitator() {
+  return !!(roomMeta && currentUid && roomMeta.facilitatorUid === currentUid);
+}
+
+// Sharing
+//
+// The invite link points at the join page with the code in it, so a recipient
+// lands on a form that asks for nothing but their name — no tab to pick, no code
+// to retype. Nothing secret travels in it: the room code is not a credential,
+// and the rules still hand out an auth uid of their own to whoever follows it.
+
+let shareResetTimer = null;
+
+function buildInviteLink(code) {
+  const url = new URL(JOIN_PAGE, window.location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('roomId', code);
+  return url.toString();
+}
+
+// The async Clipboard API is unavailable on file:// and plain http, which is
+// how this page often gets opened, so fall back to the old selection trick
+// rather than silently failing there.
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+  }
+
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-1000px';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+async function shareRoom() {
+  if (!currentRoomCode) return;
+
+  const btn = document.getElementById('btn-share');
+  const label = document.getElementById('btn-share-label');
+  const status = document.getElementById('share-status');
+  const link = buildInviteLink(currentRoomCode);
+
+  const copied = await copyText(link);
+  clearTimeout(shareResetTimer);
+
+  if (copied) {
+    btn.classList.add('copied');
+    label.textContent = 'Copied!';
+    status.textContent = 'Invite link copied to the clipboard.';
+  } else {
+    // Don't claim a copy that did not happen — hand the link over so it can be
+    // copied by hand instead.
+    label.textContent = 'Copy failed';
+    status.textContent = 'Could not copy automatically.';
+    prompt('Copy this invite link:', link);
+  }
+
+  shareResetTimer = setTimeout(() => {
+    btn.classList.remove('copied');
+    label.textContent = 'Share';
+    status.textContent = '';
+  }, 2000);
 }
 
 // Consensus
@@ -268,24 +320,40 @@ function computeConsensus(votes) {
   };
 }
 
-// Connection status
-
-function setConnectionStatus(status) {
-  const dot = document.getElementById('conn-dot');
-  const label = document.getElementById('conn-label');
-  if (!dot) return;
-  dot.className = 'conn-dot ' + status;
-  label.textContent = { connecting: 'Connecting...', connected: 'Connected', disconnected: 'Reconnecting...' }[status] || '';
-}
-
 // Rendering
+
+// Fold the separate listener feeds back into the single room shape the renderer
+// expects. Before reveal the only vote we can fill in is our own.
+function renderIfReady() {
+  if (!roomMeta || !participantsLoaded) return;
+
+  const revealed = !!roomMeta.revealed;
+  const room = {
+    code: roomMeta.code,
+    revealed,
+    participants: roomParticipants.map(p => ({
+      id: p.id,
+      name: p.name,
+      connected: p.connected,
+      hasVoted: !!p.hasVoted,
+      isFacilitator: p.ownerUid === roomMeta.facilitatorUid,
+      vote: revealed
+        ? (roomVotes[p.id] ?? null)
+        : (p.id === currentParticipantId ? myVote : null),
+    })),
+  };
+
+  if (document.getElementById('room-panel').classList.contains('hidden')) {
+    showRoomPanel();
+  }
+  renderRoom(room);
+}
 
 function renderRoom(room) {
   const me = room.participants.find(p => p.id === currentParticipantId);
-  const isFacilitator = !!(me && me.isFacilitator);
+  const isFacilitator = amFacilitator();
 
   document.getElementById('room-code-display').textContent = room.code;
-  document.getElementById('facilitator-badge').classList.toggle('hidden', !isFacilitator);
 
   // Participant list
   const ul = document.getElementById('participant-list');
@@ -303,6 +371,7 @@ function renderRoom(room) {
         : `<span class="vote-badge waiting">Waiting...</span>`;
     }
 
+    const youTag = p.id === currentParticipantId ? `<span class="you-tag">you</span>` : '';
     const roleTag = p.isFacilitator ? `<span class="role-tag">host</span>` : '';
     const offlineTag = p.connected === false ? `<span class="offline-tag">offline</span>` : '';
     const kickBtn = (isFacilitator && p.id !== currentParticipantId)
@@ -310,7 +379,7 @@ function renderRoom(room) {
       : '';
 
     li.innerHTML = `
-      <span class="participant-name">${escHtml(p.name)}${roleTag}${offlineTag}</span>
+      <span class="participant-name">${escHtml(p.name)}${youTag}${roleTag}${offlineTag}</span>
       <span class="participant-right">${voteHtml}${kickBtn}</span>
     `;
     ul.appendChild(li);
@@ -334,7 +403,7 @@ function renderRoom(room) {
   // Results
   const resultsPanel = document.getElementById('results-panel');
   resultsPanel.classList.toggle('hidden', !room.revealed);
-  if (room.revealed) renderResults(room, isFacilitator);
+  if (room.revealed) renderResults(room);
 }
 
 function renderCards(room, me) {
@@ -352,10 +421,9 @@ function renderCards(room, me) {
   });
 }
 
-function renderResults(room, isFacilitator) {
+function renderResults(room) {
   const table = document.getElementById('results-table');
   const indicator = document.getElementById('consensus-indicator');
-  const btnConfirm = document.getElementById('btn-confirm-story');
 
   table.innerHTML = `
     <thead><tr><th>Participant</th><th>Vote</th></tr></thead>
@@ -374,31 +442,14 @@ function renderResults(room, isFacilitator) {
       &nbsp;<span class="consensus-tag ${consensus.level}">${labels[consensus.level]}</span>
     `;
   }
-
-  btnConfirm.classList.add('hidden');
-}
-
-// ―― Form errors ――
-
-function showFormError(formId, msg) {
-  const form = document.getElementById(formId);
-  let err = form.querySelector('.form-error');
-  if (!err) {
-    err = document.createElement('p');
-    err.className = 'form-error';
-    form.insertBefore(err, form.querySelector('button[type="submit"]'));
-  }
-  err.textContent = msg;
-}
-function clearFormError(formId) {
-  document.getElementById(formId).querySelector('.form-error')?.remove();
 }
 
 // ―― Panel transitions ――
 
 function showRoomPanel() {
-  document.getElementById('setup-panel').classList.add('hidden');
+  document.getElementById('room-loading').classList.add('hidden');
   document.getElementById('room-panel').classList.remove('hidden');
+  document.getElementById('topbar-room').classList.remove('hidden');
 }
 
 // ―― Init ――
@@ -406,58 +457,29 @@ function showRoomPanel() {
 function initRoom() {
   initFirebase();
 
-  const params = new URLSearchParams(window.location.search);
-  const isJoin = params.get('join') === 'true';
-  const preCode = (params.get('roomId') || '').toUpperCase();
-
-  const tabCreate = document.getElementById('tab-create');
-  const tabJoin   = document.getElementById('tab-join');
-  const formCreate = document.getElementById('form-create');
-  const formJoin   = document.getElementById('form-join');
-
-  function showCreate() {
-    tabCreate.classList.add('active'); tabJoin.classList.remove('active');
-    formCreate.classList.remove('hidden'); formJoin.classList.add('hidden');
-  }
-  function showJoin() {
-    tabJoin.classList.add('active'); tabCreate.classList.remove('active');
-    formJoin.classList.remove('hidden'); formCreate.classList.add('hidden');
-    if (preCode) document.getElementById('input-room-code').value = preCode;
-  }
-
-  tabCreate.addEventListener('click', showCreate);
-  tabJoin.addEventListener('click', showJoin);
-  if (isJoin || preCode) showJoin(); else showCreate();
-
-  formCreate.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = document.getElementById('input-facilitator-name').value.trim();
-    if (!name) return;
-    clearFormError('form-create');
-    createRoom(name);
-  });
-
-  formJoin.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = document.getElementById('input-participant-name').value.trim();
-    const code = document.getElementById('input-room-code').value.trim().toUpperCase();
-    if (!name || !code) return;
-    clearFormError('form-join');
-    joinRoom(code, name);
-  });
-
   document.getElementById('btn-reveal').addEventListener('click', revealVotes);
   document.getElementById('btn-reset').addEventListener('click', newRound);
+  document.getElementById('btn-share').addEventListener('click', shareRoom);
   document.getElementById('btn-leave').addEventListener('click', () => leaveRoom());
 
-  // Restore session on page refresh
+  // Old-style invite links (?join=true&roomId=CODE) used to land here. Keep them
+  // working by forwarding to the page that now owns joining — and do the same for
+  // a link to a room other than the one this tab is already in, since the link is
+  // the more recent intent.
+  const params = new URLSearchParams(window.location.search);
+  const linkCode = (params.get('roomId') || '').toUpperCase().slice(0, 6);
+
   const session = getSession();
-  if (session?.roomCode && session?.participantId) {
-    currentParticipantId = session.participantId;
-    currentRoomCode = session.roomCode;
-    showRoomPanel();
-    joinRoom(session.roomCode, ''); // will detect existing session and reconnect
+  if (!session?.roomCode || !session?.participantId || (linkCode && linkCode !== session.roomCode)) {
+    location.replace(linkCode ? `${JOIN_PAGE}?roomId=${encodeURIComponent(linkCode)}` : JOIN_PAGE);
+    return;
   }
+
+  restoreSession(session).then(reason => {
+    if (reason) {
+      location.replace(`${JOIN_PAGE}?roomId=${encodeURIComponent(session.roomCode)}&reason=${reason}`);
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', initRoom);

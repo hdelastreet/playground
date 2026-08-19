@@ -4,71 +4,49 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ScrumEstimate — Estimation Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
-  <nav class="navbar">
+  <!-- ── Top bar — brand, plus room controls once you're in a room ─ -->
+  <header class="topbar">
     <a class="brand" href="../index.html">ScrumEstimate</a>
-    <ul>
-      <li><a href="../index.html">Home</a></li>
-      <li><a href="room.html" class="active">Room</a></li>
-      <li><a href="../steps-to-build.html">Steps to build</a></li>
-    </ul>
-  </nav>
 
-  <!-- ── Setup Panel ───────────────────────────────────────── -->
-  <main id="setup-panel" class="setup-panel">
-    <div class="setup-card">
-      <h2>Welcome to ScrumEstimate</h2>
-      <p class="setup-subtitle">Create a new room or join an existing one.</p>
-
-      <div class="setup-tabs">
-        <button id="tab-create" class="tab-btn active">Create Room</button>
-        <button id="tab-join" class="tab-btn">Join Room</button>
+    <!-- Room controls, grouped as one segmented cluster: the code and the two
+         actions that operate on it are all room management, so they read as a
+         single control instead of four things competing for the left side. -->
+    <div id="topbar-room" class="topbar-room hidden">
+      <div class="room-cluster">
+        <span class="room-cluster-code">Room&nbsp;<strong id="room-code-display">—</strong></span>
+        <button id="btn-share" class="room-cluster-btn" type="button" title="Copy the invite link">
+          <span class="room-cluster-icon" aria-hidden="true">⧉</span>
+          <span id="btn-share-label">Share</span>
+        </button>
+        <button id="btn-leave" class="room-cluster-btn danger" type="button" title="Leave this room">
+          <span class="room-cluster-icon" aria-hidden="true">⤶</span>
+          <span>Leave</span>
+        </button>
       </div>
-
-      <!-- Create form -->
-      <form id="form-create">
-        <div class="form-group">
-          <label for="input-facilitator-name">Your name</label>
-          <input id="input-facilitator-name" type="text" placeholder="e.g. Alice" maxlength="40" required />
-        </div>
-        <button type="submit" class="btn btn-primary btn-full">Create Room</button>
-      </form>
-
-      <!-- Join form -->
-      <form id="form-join" class="hidden">
-        <div class="form-group">
-          <label for="input-participant-name">Your name</label>
-          <input id="input-participant-name" type="text" placeholder="e.g. Bob" maxlength="40" required />
-        </div>
-        <div class="form-group">
-          <label for="input-room-code">Room code</label>
-          <input id="input-room-code" type="text" placeholder="e.g. ABC123" maxlength="6" autocomplete="off" style="text-transform:uppercase" required />
-        </div>
-        <button type="submit" class="btn btn-primary btn-full">Join Room</button>
-      </form>
+      <span id="share-status" class="visually-hidden" role="status" aria-live="polite"></span>
     </div>
+  </header>
+
+  <!-- ── Connecting ─────────────────────────────────────────────
+       There is no form on this page: you arrive here already in a room, from
+       create.html, join.html, or a refresh. This is what's on screen for the one
+       round-trip that takes. -->
+  <main id="room-loading" class="room-loading">
+    <p>Connecting to the room…</p>
   </main>
 
   <!-- ── Room Panel ────────────────────────────────────────── -->
   <div id="room-panel" class="hidden">
 
-    <header class="room-header">
-      <div class="room-meta">
-        <span class="room-code-label">Room&nbsp;<strong id="room-code-display">—</strong></span>
-        <span id="facilitator-badge" class="badge hidden">Facilitator</span>
-      </div>
-      <div class="conn-status">
-        <span id="conn-dot" class="conn-dot connecting"></span>
-        <span id="conn-label" class="conn-label">Connecting…</span>
-      </div>
-      <button id="btn-leave" class="btn btn-leave">Leave Room</button>
-    </header>
-
     <div class="room-layout">
 
-      <!-- Sidebar: participants + story queue -->
+      <!-- Sidebar: participants -->
       <aside class="room-sidebar">
 
         <section class="panel">
@@ -81,7 +59,7 @@
       <!-- Main: cards + controls + results -->
       <div class="room-main">
 
-        <section class="panel card-panel">
+        <section class="panel">
           <h3 class="panel-title">Cast Your Vote</h3>
           <div id="card-deck" class="card-deck"></div>
         </section>
@@ -91,7 +69,7 @@
           <button id="btn-reset" class="btn btn-secondary" disabled>New Round</button>
         </div>
 
-        <section id="results-panel" class="panel results-panel hidden">
+        <section id="results-panel" class="panel hidden">
           <h3 class="panel-title">Results</h3>
           <table id="results-table" class="results-table"></table>
           <div id="consensus-indicator" class="consensus-indicator"></div>
@@ -101,10 +79,18 @@
     </div>
   </div>
 
-  <script src="../js/app.js"></script>
-  <!-- Firebase Realtime Database SDK (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <!-- Firebase SDK (compat). Pinned by version and by subresource integrity, so a
+       swapped file on the CDN fails to execute rather than running as our code. -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"
+          integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1"
+          crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"
+          integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj"
+          crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"
+          integrity="sha384-g5H2aNdtgRBYOBLsuOAuHvUXWnw4bswmU+tYjmGc1G3JfKxl79uWwV4sQarJsLwu"
+          crossorigin="anonymous"></script>
+  <script src="../js/firebase-core.js"></script>
   <script src="../js/room.js"></script>
 </body>
 </html>

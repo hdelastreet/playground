@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScrumEstimate — Create a Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../index.html">ScrumEstimate</a>
+  </header>
+
+  <!-- One job per page: this one only creates rooms. Joining lives on join.html,
+       reachable through the switch link at the bottom — an aside, not a tab
+       competing with the thing you came here to do. -->
+  <main class="setup-panel">
+    <div class="setup-card">
+      <h2>Create a room</h2>
+      <p class="setup-subtitle">You'll be the facilitator: you reveal the votes and start each round.</p>
+
+      <form id="form-create">
+        <div class="form-group">
+          <label for="input-facilitator-name">Your name</label>
+          <input id="input-facilitator-name" type="text" placeholder="e.g. Alice" maxlength="40" autocomplete="nickname" autofocus required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Create room</button>
+      </form>
+
+      <p class="setup-switch">Already have a room code? <a href="join.html">Join a room</a></p>
+    </div>
+  </main>
+
+  <!-- Firebase SDK (compat). Pinned by version and by subresource integrity, so a
+       swapped file on the CDN fails to execute rather than running as our code. -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"
+          integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1"
+          crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"
+          integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj"
+          crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"
+          integrity="sha384-g5H2aNdtgRBYOBLsuOAuHvUXWnw4bswmU+tYjmGc1G3JfKxl79uWwV4sQarJsLwu"
+          crossorigin="anonymous"></script>
+  <script src="../js/firebase-core.js"></script>
+  <script src="../js/setup.js"></script>
+</body>
+</html>
