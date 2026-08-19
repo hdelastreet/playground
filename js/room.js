@@ -34,6 +34,16 @@ let roomListeners = [];
 let votesRef = null;
 let votesCb = null;
 
+// Whether we currently *want* to be reading the vote list, tracked separately
+// from whether we hold a listener on it. A denied read must not be what decides
+// that question — see syncVotesListener.
+let votesWanted = false;
+let votesRetryTimer = null;
+let votesRetries = 0;
+
+const VOTES_RETRY_BASE_MS = 300;
+const VOTES_RETRY_MAX = 6;     // ~19s of backoff in total before we stop asking
+
 function listen(ref, cb, errCb) {
   const bound = ref.on('value', cb, errCb || (() => {}));
   roomListeners.push({ ref, cb: bound });
@@ -43,9 +53,17 @@ function detachVotesListener() {
   if (votesRef) { votesRef.off('value', votesCb); votesRef = null; votesCb = null; }
 }
 
+function cancelVotesRetry() {
+  clearTimeout(votesRetryTimer);
+  votesRetryTimer = null;
+  votesRetries = 0;
+}
+
 function detachRoomListeners() {
   roomListeners.forEach(({ ref, cb }) => ref.off('value', cb));
   roomListeners = [];
+  votesWanted = false;
+  cancelVotesRetry();
   detachVotesListener();
 }
 
@@ -91,17 +109,53 @@ function subscribeToRoom(code) {
 // Attach to the full vote list only while votes are revealed. Outside that
 // window the rules deny the read, so holding the listener open would just
 // produce permission errors.
+//
+// A denial here is not necessarily final, which is why it now retries. We attach
+// in response to `revealed` turning true on the meta listener — and that listener
+// also fires on our own optimistic local write, before the server has committed
+// it. Two things make the server still answer "revealed: false" at that moment:
+// the reveal being queued behind a reconnect (Firebase restores listens before it
+// flushes pending writes), or the round-trip simply not having landed yet.
+// Treating either as "there are no votes" is what left a revealed room showing
+// every vote as "—", with no way out but a new round.
 function syncVotesListener(code, revealed) {
-  if (revealed && !votesRef) {
-    votesRef = rRef(`rooms/${code}/votes`);
-    votesCb = votesRef.on('value',
-      snap => { roomVotes = snap.val() || {}; renderIfReady(); },
-      () => { detachVotesListener(); roomVotes = {}; renderIfReady(); }
-    );
-  } else if (!revealed && votesRef) {
+  votesWanted = revealed;
+
+  if (!revealed) {
+    cancelVotesRetry();
     detachVotesListener();
     roomVotes = {};
+    return;
   }
+  if (votesRef) return;
+
+  votesRef = rRef(`rooms/${code}/votes`);
+  votesCb = votesRef.on('value',
+    snap => {
+      cancelVotesRetry();
+      roomVotes = snap.val() || {};
+      renderIfReady();
+    },
+    () => {
+      // Whatever we already read stays on screen. Anything stale is cleared by the
+      // !revealed branch above when the round ends, so the only thing holding on to
+      // it avoids is a flash of "—" between the denial and the retry.
+      detachVotesListener();
+      scheduleVotesRetry(code);
+    }
+  );
+}
+
+// Backoff rather than a tight loop: each attempt costs a round-trip, and if the
+// read really is denied for good we stop asking instead of hammering the rules.
+function scheduleVotesRetry(code) {
+  if (votesRetryTimer || !votesWanted || votesRetries >= VOTES_RETRY_MAX) return;
+  const delay = VOTES_RETRY_BASE_MS * Math.pow(2, votesRetries);
+  votesRetries += 1;
+  votesRetryTimer = setTimeout(() => {
+    votesRetryTimer = null;
+    if (votesWanted && currentRoomCode === code) syncVotesListener(code, true);
+  }, delay);
 }
 
 function handleRoomClosed() {
@@ -113,9 +167,75 @@ function handleRoomClosed() {
 // alert box: tear down, then hand them the join page with the reason on it.
 function handleRemoved(reason) {
   const code = currentRoomCode;
+  stopPresence();
   detachRoomListeners();
   clearSession();
   location.replace(`${JOIN_PAGE}?roomId=${encodeURIComponent(code || '')}&reason=${reason}`);
+}
+
+// Presence
+//
+// `connected` cannot be written once and left alone, which is what it was before:
+// a background tab gets its timers throttled, Firebase's keepalive misses, the
+// socket drops, and the onDisconnect hook writes `connected: false`. The client
+// then reconnects on its own — but nothing put the flag back, so the badge said
+// "offline" for the rest of the meeting even though the room was working.
+//
+// Worse, the hook is one-shot: Firebase clears its onDisconnect tree when it
+// fires, so after that first drop nobody was marking us offline either. The flag
+// was stuck at whatever the last disconnect left behind.
+//
+// So presence has to be driven by the connection itself. `.info/connected` is a
+// client-local value the SDK maintains, readable without a rule, and it fires on
+// every transition — including each reconnect, which is exactly the moment the
+// flag and the hook both need re-establishing.
+
+let presenceInfoRef = null;
+let presenceInfoCb = null;
+let presencePRef = null;
+
+function startPresence(code, participantId) {
+  stopPresence();
+  presencePRef = rRef(`rooms/${code}/participants/${participantId}`);
+  presenceInfoRef = rRef('.info/connected');
+
+  presenceInfoCb = presenceInfoRef.on('value', snap => {
+    // Going down needs nothing from us: the onDisconnect hook below is what
+    // writes `connected: false`, and it is the server that runs it, so it still
+    // works for the case this whole flag exists for — a tab that just closes.
+    if (snap.val() !== true) return;
+
+    const pRef = presencePRef;
+
+    // Arm the hook before claiming to be online. The other order leaves a window
+    // where a drop would strand us marked connected, which is the failure that is
+    // actually visible to everyone else in the room.
+    pRef.onDisconnect().update({ connected: false })
+      .then(() => {
+        if (presencePRef !== pRef) return;   // left the room while this was in flight
+        return pRef.update({ connected: true });
+      })
+      .catch(() => {});
+
+    onReconnected();
+  });
+}
+
+function stopPresence() {
+  if (presenceInfoRef) presenceInfoRef.off('value', presenceInfoCb);
+  presenceInfoRef = null;
+  presenceInfoCb = null;
+  presencePRef = null;
+}
+
+// A reconnect can also have stranded the vote list: if the reveal was still
+// pending when the socket came back, the re-sent listen raced ahead of it and was
+// denied. Re-drive it against what we believe the room state to be.
+function onReconnected() {
+  if (roomMeta && currentRoomCode) {
+    cancelVotesRetry();
+    syncVotesListener(currentRoomCode, !!roomMeta.revealed);
+  }
 }
 
 // Entering the room
@@ -154,13 +274,12 @@ async function restoreSession(session) {
   currentParticipantId = session.participantId;
   currentRoomCode = session.roomCode;
 
-  // Auto-mark offline on unexpected disconnect. Installed here rather than at
-  // create/join time, because navigating from those pages to this one would have
-  // fired it straight away.
-  await pRef.update({ connected: true });
-  pRef.onDisconnect().update({ connected: false });
-
   subscribeToRoom(session.roomCode);
+
+  // Presence starts here rather than at create/join time, because navigating from
+  // those pages to this one would have fired the disconnect hook straight away.
+  // After subscribeToRoom, so its reconnect handling has room state to work with.
+  startPresence(session.roomCode, session.participantId);
   return null;
 }
 
@@ -208,6 +327,11 @@ async function leaveRoom() {
   if (!currentRoomCode || !currentParticipantId) return;
 
   leavingIntentionally = true;
+
+  // Stop presence before cancelling, or the `.info/connected` handler could arm a
+  // fresh hook straight after — and re-create the participant node we are about to
+  // delete.
+  stopPresence();
 
   // Cancel the Firebase onDisconnect hook so it doesn't fire after we remove ourselves
   await rRef(`rooms/${currentRoomCode}/participants/${currentParticipantId}`)

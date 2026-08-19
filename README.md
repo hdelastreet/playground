@@ -131,8 +131,12 @@ rooms/
   check it on every privileged write.
 - `ownerUid` ties a participant node to the browser that created it, so one
   participant cannot rewrite or delete another.
-- `connected` is maintained by Firebase's `onDisconnect` hook, so a closed tab
-  shows up as *offline* rather than vanishing.
+- `connected` is driven by `.info/connected`, not written once at join. Every
+  time the socket comes back the room page re-arms the `onDisconnect` hook and
+  re-asserts `connected: true` — the hook is one-shot, and a backgrounded tab
+  drops its connection often enough that a flag written once would stick at
+  *offline* for the rest of the meeting. A closed tab shows up as *offline*
+  rather than vanishing.
 - When the facilitator leaves, the whole room node is deleted and every
   participant is sent back to the join page, which says the room was closed.
 
