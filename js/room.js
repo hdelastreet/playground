@@ -557,20 +557,16 @@ function renderCards(room, me) {
   });
 }
 
+// The outcome leads, the breakdown follows. A two-column table needed its own
+// header row on top of the panel title, which stacked two uppercase labels for
+// what is usually a handful of names — so the per-person votes are chips now.
 function renderResults(room) {
-  const table = document.getElementById('results-table');
-  const indicator = document.getElementById('consensus-indicator');
-
-  table.innerHTML = `
-    <thead><tr><th>Participant</th><th>Vote</th></tr></thead>
-    <tbody>${room.participants.map(p =>
-      `<tr><td>${escHtml(p.name)}</td><td class="vote-cell">${escHtml(p.vote ?? '-')}</td></tr>`
-    ).join('')}</tbody>
-  `;
+  const summary = document.getElementById('results-summary');
+  const list = document.getElementById('results-votes');
 
   const consensus = computeConsensus(room.participants.map(p => p.vote));
   if (consensus.level === 'no-votes') {
-    indicator.innerHTML = `<span class="consensus-tag no-votes">No numeric votes cast</span>`;
+    summary.innerHTML = `<span class="consensus-tag no-votes">No numeric votes cast</span>`;
   } else {
     // Icon plus word, so the state never rests on colour alone (§7).
     const labels = {
@@ -578,11 +574,23 @@ function renderResults(room) {
       close:     `${ICONS.minus}Close`,
       split:     `${ICONS.x}Split`,
     };
-    indicator.innerHTML = `
-      Average: <strong>${consensus.avg}</strong>
+    // The range only says something once the votes disagree.
+    const spread = consensus.min === consensus.max
+      ? ''
+      : `<span class="results-spread">range ${consensus.min}–${consensus.max}</span>`;
+    summary.innerHTML = `
+      <span class="results-average">${consensus.avg}</span>
+      <span class="results-average-label">average</span>
       <span class="consensus-tag ${consensus.level}">${labels[consensus.level]}</span>
+      ${spread}
     `;
   }
+
+  list.innerHTML = room.participants.map(p => `
+    <li class="vote-chip">
+      <span class="vote-chip-name">${escHtml(p.name)}</span>
+      <span class="vote-chip-value">${escHtml(p.vote ?? '—')}</span>
+    </li>`).join('');
 }
 
 // ―― Panel transitions ――

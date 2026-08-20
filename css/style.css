@@ -557,46 +557,68 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
 .facilitator-controls { display: flex; gap: var(--space-12); flex-wrap: wrap; }
 
 /* ── Results ───────────────────────────────────────────────── */
-.results-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-body-sm);
-  line-height: var(--lh-body-sm);
-  margin-bottom: var(--space-16);
-}
-.results-table th {
-  text-align: left;
-  font-size: var(--fs-caption);
-  line-height: var(--lh-caption);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--color-text-3);
-  padding: var(--space-6) var(--space-8);
-  border-bottom: 1px solid var(--color-border-strong);
-}
-.results-table td { padding: var(--space-8); border-bottom: 1px solid var(--color-border-subtle); }
-.results-table tbody tr:nth-child(even) { background: var(--color-surface-2); }
-.results-table tr:last-child td { border-bottom: none; }
-.vote-cell {
-  font-family: var(--font-display);
-  font-weight: 800;
-  color: var(--color-accent);
-  font-size: var(--fs-body);
-}
-.consensus-indicator {
-  color: var(--color-text-2);
+/* The panel title already labels this block, so the breakdown carries no second
+   header row: the average leads as a stat and the per-person votes sit under it
+   as chips. One uppercase label per card, one rule per card. */
+.results-summary {
   display: flex;
-  align-items: center;
-  gap: var(--space-12);
+  align-items: baseline;
+  gap: var(--space-8);
   flex-wrap: wrap;
 }
-.consensus-indicator strong {
+.results-average {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: var(--fs-h3);
-  line-height: var(--lh-h3);
+  font-weight: 800;
+  font-size: var(--fs-stat);
+  line-height: var(--lh-stat);
   color: var(--color-accent);
+}
+.results-average-label {
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
+  color: var(--color-text-2);
+  margin-right: var(--space-4);
+}
+/* Pills sit on the text baseline of the label, not the stat's. */
+.results-summary .consensus-tag { align-self: center; }
+.results-spread {
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
+  color: var(--color-text-2);
+  align-self: center;
+}
+.results-votes {
+  list-style: none;
+  margin: var(--space-16) 0 0;
+  padding: var(--space-16) 0 0;
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+.vote-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-full);
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-12);
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body-sm);
+}
+.vote-chip-name { font-weight: 500; color: var(--color-text-2); }
+.vote-chip-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-body);
+  line-height: var(--lh-caption);
+  color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  min-width: 28px;
+  text-align: center;
+  padding: var(--space-4) var(--space-8);
 }
 .consensus-tag {
   display: inline-flex;
