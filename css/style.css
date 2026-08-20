@@ -402,6 +402,9 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
 /* Copy confirmation — the label swaps to "Copied!" for a beat. */
 .room-cluster-btn.copied,
 .room-cluster-btn.copied:hover { background: var(--color-success-tint); color: var(--color-success); }
+/* The reactions toggle is the one control in the cluster that holds a state, so
+   it is the only one that needs a pressed look. */
+.room-cluster-btn[aria-pressed="true"] { background: var(--color-accent-pill); color: var(--color-accent); }
 
 /* ── Room layout (§5) ──────────────────────────────────────── */
 .room-layout {
@@ -553,6 +556,91 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
 }
 .card:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
 
+/* ── Reactions ─────────────────────────────────────────────────
+   A side channel, and the styling says so: a hairline footer under the deck,
+   caption-sized text, and the same ghost icon button used everywhere else. It
+   never competes with the cards.
+
+   Sending is two steps — pick a reaction, then click a name — which is one step
+   more than every other product trains people to expect. The states below are
+   what make the second step legible: the caption, the picked-up button, the four
+   that recede, and the list turning into a target area. */
+.reaction-bar {
+  display: flex;
+  align-items: center;
+  /* Caption immediately beside the buttons, not pushed to the far edge: it is the
+     cue that explains the second step, so it has to be where the eye already is
+     after the first click — not 400px away across the panel. */
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-top: var(--space-16);
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--color-border-subtle);
+}
+/* It carries the instruction at rest too, so the two-step is explained before
+   anyone can be confused by it. */
+.reaction-hint {
+  margin-right: var(--space-4);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
+  color: var(--color-text-3);
+}
+.reaction-bar.armed .reaction-hint {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Reuses .btn-icon for the box; only the armed state is new. No lift and no
+   shadow — the deck above is deliberately the one thing that rises. */
+.reaction-btn {
+  transition: background var(--motion-fast) var(--ease-standard),
+              color var(--motion-fast) var(--ease-standard),
+              border-color var(--motion-fast) var(--ease-standard),
+              opacity var(--motion-fast) var(--ease-standard);
+}
+.reaction-btn.armed {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+/* One picked up, the rest put down: the bar itself shows a choice is outstanding. */
+.reaction-bar.armed .reaction-btn:not(.armed) { opacity: .4; }
+
+/* Aiming. The outline is deliberate — it takes no layout space, so the list does
+   not shift the moment a reaction is armed. */
+.participant-list.aiming { cursor: crosshair; }
+.participant-list.aiming .participant-item:hover,
+.participant-list.aiming .participant-item:focus-visible {
+  background: var(--color-accent-subtle);
+  border-radius: var(--radius-xs);
+  outline: 1px dashed var(--color-border-strong);
+  outline-offset: 2px;
+}
+
+/* What lands on someone's row. The one animation in the product: it rises a
+   little and fades, entering and leaving, which is what the emphasized curve is
+   for. Its lifetime is a JS timer, not this duration. */
+.reaction-pop {
+  display: inline-block;
+  font-size: var(--fs-body);
+  line-height: 1;
+  pointer-events: none;
+  animation: reaction-pop 1800ms var(--ease-emphasized) forwards;
+}
+/* Shown while hovering a row with a reaction armed: the same glyph, in the same
+   place, at a whisper. This is what teaches the two-step without words. */
+.reaction-pop.preview {
+  animation: none;
+  opacity: .35;
+}
+@keyframes reaction-pop {
+  0%   { opacity: 0; transform: translateY(0); }
+  15%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
 /* ── Facilitator controls ──────────────────────────────────── */
 .facilitator-controls { display: flex; gap: var(--space-12); flex-wrap: wrap; }
 
@@ -676,6 +764,12 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   .setup-panel { padding: var(--space-16); }
   .setup-card { padding: var(--space-24) var(--space-20); }
   .room-placeholder { margin: var(--space-32) var(--space-16); padding: var(--space-24) var(--space-20); }
+  /* One column: the caption and five buttons no longer fit on a line, and left to
+     itself the bar wrapped into three ragged rows. Give the caption its own row
+     and the buttons theirs, aligned to the start like everything else in the
+     column. */
+  .reaction-bar { justify-content: flex-start; }
+  .reaction-hint { flex-basis: 100%; margin-right: 0; }
 }
 
 /* ── Reduced motion (§6, §7) ───────────────────────────────── */
@@ -690,4 +784,12 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   .card:hover:not(:disabled),
   .card.selected { transform: none; }
   .btn:active { transform: none; }
+  /* The rule above would otherwise reduce a reaction to an imperceptible flash.
+     Drop the motion and keep the glyph: it is still removed on schedule, because
+     what ends it is a timer in room.js, not this animation. */
+  .reaction-pop {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
 }

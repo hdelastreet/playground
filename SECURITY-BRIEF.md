@@ -291,6 +291,53 @@ clock running fast would push `endAt` past the window the rules allow and get th
 sweep denied. `SWEEP_BATCH` must stay at or below the rules' `limitToFirst`
 ceiling for the same reason.
 
+### Reactions — a new client-writable path
+
+`rooms/$code/reactions/$pid` is the first write path added since the rules were
+written, so what bounds it, explicitly:
+
+- **Own slot only.** `.write` is the same `ownerUid` lookup the votes use, so a
+  participant can write one node — theirs — and no one else's.
+- **`at` must equal the server clock**, the same clause `meta/lastActiveAt` uses.
+  Everything below rests on that being unforgeable in both directions.
+- **A rate limit, the first in this file.** `.validate` requires each new `at` to
+  be more than 1200ms past the previous one. Rules cannot count, but they can
+  compare against a server-stamped predecessor — which is why the slot is left in
+  place after sending rather than deleted. The client keeps a slightly wider 1400ms
+  gap of its own so a legitimate user never actually trips it, because a tripped
+  write returns a permission error and would read as a bug.
+- **`to` must be an existing participant of the same room**, so a reaction cannot
+  be parked against a name nobody can see.
+- **Unknown keys rejected** by the usual `$other: false`.
+- **Reactions never stamp `lastActiveAt`.** Deliberate: heckling is not evidence
+  the team is estimating, and letting it refresh the timestamp would let an idle
+  room keep itself alive past the 24h TTL.
+
+**`kind` is validated by shape, not by enumeration** — `/^[a-z]{1,16}$/` rather
+than the explicit list the vote faces get. This was a decision, not an oversight.
+Enumerating it would make every future emoji a three-place change ending in a
+manual console publish, broken for everyone until it landed, for a set whose whole
+point is being easy to edit. The trade:
+
+- A forged `kind` has no blast radius. Every client looks the value up in its own
+  `REACTIONS` table and renders nothing on a miss, so an invented one displays
+  nowhere. The same mechanism is what lets an old open tab ignore a newly added
+  reaction instead of breaking on it.
+- What it does permit is 16 lowercase letters of chosen text in a node the sender
+  already owns, rate-limited, readable only inside the room. The app already ships
+  a **40-character, fully free-text, permanently displayed** field with the same
+  reach — `participants/$pid/name`. This is strictly narrower, and excluding
+  digits and punctuation keeps it from carrying a URL.
+
+Two known soft spots, neither judged worth machinery:
+
+- The facilitator's room-level `.write` cascades here, as it does to `votes`, so
+  they can write anyone's slot. `.validate` still bounds the shape, and they can
+  already remove the person outright.
+- `newRound()` clears `reactions`, which removes the predecessor the rate limit
+  compares against — so a facilitator spamming new rounds could sidestep the gap.
+  They would be resetting everyone's votes to do it.
+
 ### Not done / still open
 
 - **The stale-delete branch has only been tested negatively.** Deleting a *fresh*
@@ -300,6 +347,11 @@ ceiling for the same reason.
   confirm it for real: temporarily drop the `86400000` in the console rules to
   `60000`, leave a room for a minute, load it, and check it is collected — then
   put it back.
+- **The reactions rules are unverified.** Nothing in the REST suite covers the
+  new node. Before trusting it, confirm the denials by hand in the console's Rules
+  Playground: someone else's slot, a literal `at`, a second write inside 1200ms,
+  an uppercase or over-long `kind`, an extra key, and a `to` that names no
+  participant. Note that a `kind` nobody has defined yet is allowed *by design*.
 - **No cap on participants per room.** Realtime Database rules cannot count
   children. Someone with a room code can add participants without limit. The
   per-node size limits bound how fast, not whether.

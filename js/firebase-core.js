@@ -21,19 +21,41 @@ const FIREBASE_CONFIG = {
 };
 
 const SESSION_KEY = 'scrumestimate_session';
+const REACTIONS_KEY = 'scrumestimate_reactions';
 const ROOM_TTL_MS = 24 * 60 * 60 * 1000; // rooms idle longer than this are abandoned
+
+// How long a reaction stays on screen, and how long the sender must wait before
+// the next one. The cooldown sits above the 1200ms the rules enforce, so the
+// client never issues a write it knows will be rejected.
+const REACTION_TTL_MS = 2500;
+const REACTION_COOLDOWN_MS = 1400;
 
 let db = null;
 let currentParticipantId = null;
 let currentRoomCode = null;
 let currentUid = null;        // Firebase anonymous auth uid — the identity the rules trust
 let authReady = null;         // Promise resolving once we are signed in
+let serverOffset = 0;         // see serverNow()
 
 // Firebase initialization
 
 function initFirebase() {
   if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
   db = firebase.database();
+
+  // `.info/serverTimeOffset` is maintained by the SDK itself, so this needs no
+  // rule and costs no round-trip of its own. Reactions are stamped with the
+  // server clock and expire against it, so a client whose own clock is off by a
+  // few seconds would otherwise drop every reaction it receives as too old.
+  db.ref('.info/serverTimeOffset').on('value', snap => {
+    serverOffset = snap.val() || 0;
+  });
+}
+
+// The server's clock, as best we can tell. Falls back to the local clock when
+// the offset is unknown, which is the pre-connection state.
+function serverNow() {
+  return Date.now() + serverOffset;
 }
 
 // Anonymous sign-in. There is no login screen and nothing for the user to do —
@@ -117,6 +139,17 @@ function saveSession(participantId, roomCode) {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify({ participantId, roomCode }));
 }
 function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+
+// Whether the reaction bar is showing. A preference rather than session state, so
+// it lives in localStorage and outlasts the meeting — someone who turned it on
+// once should not have to find the toggle again next week. Off by default: the
+// room's job is estimating, and this is not that.
+function getReactionsPref() {
+  try { return localStorage.getItem(REACTIONS_KEY) === 'on'; } catch { return false; }
+}
+function saveReactionsPref(on) {
+  try { localStorage.setItem(REACTIONS_KEY, on ? 'on' : 'off'); } catch {}
+}
 
 // Firebase helpers
 

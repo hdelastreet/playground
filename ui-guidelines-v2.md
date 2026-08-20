@@ -304,6 +304,11 @@ Do not mix icon styles.
 
 Do not use emoji as interface icons.
 
+Emoji as *content* are a different question and are allowed: the `☕` on a card
+face and the reactions people send each other are things the product is about,
+not chrome it is built from. The line is whether it labels an interface affordance
+— a reaction button carries a Lucide icon, and the emoji is only what gets sent.
+
 ---
 
 ## 3. Interaction states
@@ -616,7 +621,7 @@ Do not introduce:
 - Mixed icon families
 - Decorative glass effects
 - Excessive blur
-- Emoji as UI icons
+- Emoji as UI icons (emoji as user-sent or card content is fine — see §2)
 - Unnecessary animation
 - One-off easing curves
 - Arbitrary spacing values when a system value works

@@ -40,6 +40,10 @@ your own project instead:
    Firebase's rules parser accepts — the console's own default rules ship with
    one — but a strict JSON linter will not.)
 
+If you already had an older version of these rules published, republish them:
+reactions live at a node that did not exist before, and every write to it is
+refused until the new rules land.
+
 The `apiKey` in `js/firebase-core.js` is a public client identifier, not a secret — it is
 designed to ship in client code. `database.rules.json` is what actually governs
 access.
@@ -93,6 +97,7 @@ redirect-based sign-in and is not what anonymous sign-in checks.
 | `votes` is readable only once `revealed` is true | Before reveal each client can read exactly one vote: their own. |
 | Field-by-field `.validate` | Names ≤ 40 chars, votes restricted to the card values, unknown keys rejected outright — a client cannot inflate the database with arbitrary payloads. |
 | `meta/lastActiveAt` must equal the server clock | It can be neither backdated to force a delete nor forged to outlive the TTL. |
+| `reactions/<id>` is own-slot only, and rate-limited | The one rate limit in the file: `at` is pinned to the server clock, so each new reaction must be at least 1.2s past the previous one. |
 
 Two things the rules genuinely cannot do, both inherent to Realtime Database:
 there is no way to count children, so **the number of participants in a room is
@@ -116,6 +121,11 @@ rooms/
         id, name, ownerUid, hasVoted, connected, joinedAt
     votes/
       <participantId>: "8"
+    reactions/
+      <senderParticipantId>/
+        kind: "agree"
+        to:   "<participantId the reaction is aimed at>"
+        at:   <server timestamp>
 ```
 
 - Room codes are 6 characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` —
@@ -139,6 +149,27 @@ rooms/
   rather than vanishing.
 - When the facilitator leaves, the whole room node is deleted and every
   participant is sent back to the join page, which says the room was closed.
+- **A reaction is a write, not a message.** One slot per sender holds only their
+  most recent one; each client animates an arrival for about two seconds and then
+  forgets it, and nothing is ever written to end one. A reaction older than that
+  window is ignored on arrival, which is also what stops a refresh or a reconnect
+  replaying the ones that came before. Reactions deliberately do **not** stamp
+  `lastActiveAt`: heckling is not estimating, and a distracted room should still
+  age out on schedule.
+
+### Changing the reaction set
+
+Edit the `REACTIONS` array at the top of the reactions section in `js/room.js` —
+that is the whole change. Each entry is a `kind` (lowercase, ≤16 chars), the
+`emoji` that lands on someone's row, a `label` used for the tooltip and for
+screen readers, and a Lucide `icon` path for the button.
+
+Nothing else needs touching, and in particular **no rules change and no console
+publish**. The rules validate `kind` by shape rather than by listing the values
+the way vote faces are listed, precisely so the set stays editable; clients look
+each kind up in their own table and render nothing on a miss, so a value a client
+has never heard of is ignored rather than breaking it. That also means a browser
+left open on an older version simply won't show a newly added reaction.
 
 ### Retention
 
@@ -197,7 +228,7 @@ room page forwards them.
 index.html            Landing page — one button per entry path
 pages/create.html     Create a room (name only; you become the facilitator)
 pages/join.html       Join a room (code prefilled when you follow an invite link)
-pages/room.html       The room itself: card deck, votes, results
+pages/room.html       The room itself: card deck, votes, results, reactions
 pages/results.html    Placeholder — session history and export are not built yet
 css/style.css         All styles
 js/firebase-core.js   Firebase config, anonymous auth, session hand-off

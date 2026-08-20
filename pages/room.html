@@ -20,6 +20,19 @@
     <div id="topbar-room" class="topbar-room hidden">
       <div class="room-cluster">
         <span class="room-cluster-code">Room&nbsp;<strong id="room-code-display">—</strong></span>
+        <button id="btn-reactions" class="room-cluster-btn" type="button"
+                aria-pressed="false" aria-controls="reaction-bar"
+                title="Show reactions">
+          <!-- Lucide "smile" -->
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+            <line x1="9" x2="9.01" y1="9" y2="9" />
+            <line x1="15" x2="15.01" y1="9" y2="9" />
+          </svg>
+          <span class="visually-hidden">Reactions</span>
+        </button>
         <button id="btn-share" class="room-cluster-btn" type="button" title="Copy the invite link">
           <!-- Lucide "copy", inlined: no CDN, works offline, nothing to SRI-pin. -->
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -73,6 +86,17 @@
         <section class="panel">
           <h3 class="panel-title">Cast Your Vote</h3>
           <div id="card-deck" class="card-deck"></div>
+
+          <!-- Reactions, as a footer to the deck rather than a panel of their own:
+               they are a side channel, and the hairline keeps them subordinate to
+               the cards above. A sibling of #card-deck, never a child — the deck is
+               rebuilt from scratch on every update and would take this with it.
+               The buttons are generated from the REACTIONS array in room.js, so the
+               set can be edited in one place. -->
+          <div id="reaction-bar" class="reaction-bar hidden" role="group" aria-label="Reactions">
+            <span id="reaction-hint" class="reaction-hint"></span>
+          </div>
+          <span id="reaction-status" class="visually-hidden" role="status" aria-live="polite"></span>
         </section>
 
         <div id="facilitator-controls" class="facilitator-controls hidden">

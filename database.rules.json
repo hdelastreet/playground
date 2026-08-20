@@ -116,6 +116,56 @@
           }
         },
 
+        // Reactions — the side channel that lets people agree, disagree or heckle
+        // without it becoming a chat. One slot per sender, holding only their most
+        // recent reaction: the write is the event, and the client animates it for a
+        // couple of seconds and forgets it. Nothing is ever written to end one.
+        //
+        // Leaving the slot in place rather than deleting it after sending is what
+        // makes the rate limit below possible — it needs a predecessor to compare
+        // against. The cost is one small node per participant, removed with the
+        // room.
+        "reactions": {
+          ".read": "auth != null",
+
+          "$pid": {
+
+            // Own slot only, the same ownerUid lookup the votes use.
+            ".write": "auth != null && root.child('rooms').child($code).child('participants').child($pid).child('ownerUid').val() === auth.uid",
+
+            // The second clause is a rate limit, and it is the only one in this
+            // file. Rules cannot count, but `at` is pinned to the server clock
+            // below, so comparing against the previous value bounds how often
+            // anyone can send: roughly one reaction per 1.2s per person.
+            ".validate": "newData.hasChildren(['kind', 'to', 'at']) && (!data.exists() || newData.child('at').val() > data.child('at').val() + 1200)",
+
+            // Validated by shape, deliberately not by enumeration the way the vote
+            // values above are. The reaction set is meant to be edited freely, and
+            // enumerating it here would make every new emoji a manual console
+            // publish that breaks the room until it lands. The client owns the
+            // meaning instead: it looks each kind up in its own table and renders
+            // nothing on a miss, so a forged value displays nowhere and a client
+            // that predates a new reaction simply ignores it.
+            //
+            // What this does permit is 16 lowercase letters of free text in a slot
+            // the sender already owns. That is strictly less than the 40-character
+            // free-text `name` above, and no digits or punctuation means it cannot
+            // carry a URL.
+            "kind": { ".validate": "newData.isString() && newData.val().matches(/^[a-z]{1,16}$/)" },
+
+            // Directed at a real participant of this room, so a reaction cannot be
+            // parked on a name nobody can see.
+            "to":   { ".validate": "newData.isString() && root.child('rooms').child($code).child('participants').child(newData.val()).exists()" },
+
+            // Server clock only — same as meta/lastActiveAt, and for the same
+            // reason: it is what the rate limit and the client's staleness check
+            // both rest on, so it must not be forgeable in either direction.
+            "at":   { ".validate": "newData.val() === now" },
+
+            "$other": { ".validate": false }
+          }
+        },
+
         "$other": { ".validate": false }
       }
     }
