@@ -14,9 +14,12 @@
   --color-text-2: #5c5448;
   --color-text-3: #a09280;
 
-  --color-border-subtle: #eee3d4;
-  --color-border: #e8d8c2;
-  --color-border-strong: #d8c8b0;
+  /* Translucent so one token reads correctly on white, on the canvas, and on
+     the secondary surface. The base is a deep amber-brown, not a neutral —
+     neutral translucency goes grey on white and drains the warmth. */
+  --color-border-subtle: rgba(159,93,1,.15);
+  --color-border: rgba(159,93,1,.24);
+  --color-border-strong: rgba(159,93,1,.36);
 
   --color-accent: #D07818;
   --color-accent-hover: #b86814;
@@ -26,10 +29,12 @@
   /* §4 Pills specifies 0.10 literally — between subtle and soft. */
   --color-accent-pill: rgba(208,120,24,.10);
 
-  /* Functional, not brand (§2). Tints are derived at the pill opacity because
-     §4 badges need a background and §2 lists only the solid values. */
+  /* Functional, not brand (§2). All tints sit at .10, matching the accent pill,
+     so a red badge does not shout louder than an amber one purely because of
+     its hue. Tints are for badges, pills and inline notices only — never for
+     sections, cards or table rows. */
   --color-success: #2f7d4a;
-  --color-success-tint: rgba(47,125,74,.12);
+  --color-success-tint: rgba(47,125,74,.10);
   --color-error: #dc2626;
   --color-error-tint: rgba(220,38,38,.10);
   --color-warning: #a66a00;
@@ -70,10 +75,22 @@
   --shadow-md: 0 4px 16px rgba(15,13,10,.07);
   --shadow-lg: 0 12px 40px rgba(15,13,10,.10);
 
+  /* ── Control heights (§2) ──────────────────────────────────── */
+  /* Height is fixed, horizontal padding is not. Controls on the same row share
+     a height — that matters more than any one control's ideal size. */
+  --control-sm: 32px;   /* dense chrome, icon buttons */
+  --control-md: 40px;   /* default */
+  --control-lg: 48px;   /* prominent CTAs */
+
   /* ── Motion (§6) ───────────────────────────────────────────── */
   --motion-fast: 100ms;
   --motion-normal: 180ms;
   --motion-slow: 280ms;
+  /* Standard for Fast/Normal state changes; Emphasized for Slow and for
+     anything entering or leaving. Neither overshoots — a hard decelerate is
+     not a spring. */
+  --ease-standard: cubic-bezier(0, 0, .2, 1);
+  --ease-emphasized: cubic-bezier(.16, 1, .3, 1);
 
   /* Layout: the top bar is a fixed-height band that the centred panels
      subtract from, so it is a token rather than a magic number. */
@@ -133,7 +150,7 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   color: var(--color-accent);
   letter-spacing: -.5px;
   flex-shrink: 0;
-  transition: color var(--motion-fast) ease;
+  transition: color var(--motion-fast) var(--ease-standard);
 }
 .topbar .brand:hover { color: var(--color-accent-hover); }
 
@@ -150,14 +167,16 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   font-size: var(--fs-body);
   line-height: var(--lh-body);
   font-weight: 600;
-  padding: var(--space-8) var(--space-20);
+  /* Medium is the default control height (§2). Height fixed, padding free. */
+  height: var(--control-md);
+  padding: 0 var(--space-20);
   border-radius: var(--radius-sm);
   border: 1.5px solid transparent;
   cursor: pointer;
-  transition: background var(--motion-fast) ease,
-              border-color var(--motion-fast) ease,
-              color var(--motion-fast) ease,
-              transform var(--motion-fast) ease;
+  transition: background var(--motion-fast) var(--ease-standard),
+              border-color var(--motion-fast) var(--ease-standard),
+              color var(--motion-fast) var(--ease-standard),
+              transform var(--motion-fast) var(--ease-standard);
 }
 .btn:active { transform: scale(.97); }
 
@@ -171,6 +190,12 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   border-color: var(--color-border);
 }
 .btn-secondary:hover:not(:disabled) { border-color: var(--color-accent); color: var(--color-accent); }
+
+/* Only Medium is defined. §2 also specifies Small (32px) and Large (48px), but
+   nothing in this product currently needs either as a .btn — the 32px controls
+   here are the top-bar cluster and the icon button, neither of which uses this
+   class, and 48px read as too heavy for the home-page CTAs. §8: do not add
+   variants the product does not need. Both are a one-line addition when it does. */
 
 /* Disabled: contrast drops, text stays legible (§3). */
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
@@ -297,7 +322,9 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   color: var(--color-text-2);
 }
 .form-group input {
-  padding: var(--space-12);
+  /* Medium, so inputs and the button below them line up (§2). */
+  height: var(--control-md);
+  padding: 0 var(--space-12);
   border: 1.5px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   font-family: var(--font-body);
@@ -305,7 +332,7 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   line-height: var(--lh-body);
   background: var(--color-surface);
   color: var(--color-text);
-  transition: border-color var(--motion-fast) ease;
+  transition: border-color var(--motion-fast) var(--ease-standard);
   width: 100%;
 }
 .form-group input::placeholder { color: var(--color-text-3); }
@@ -325,6 +352,8 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
 .room-cluster {
   display: flex;
   align-items: stretch;
+  /* Small: this is dense top-bar chrome, and the whole cluster is one control. */
+  height: var(--control-sm);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   background: var(--color-surface-2);
@@ -338,7 +367,7 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   line-height: var(--lh-body-sm);
   font-weight: 600;
   color: var(--color-text-2);
-  padding: var(--space-6) var(--space-12);
+  padding: 0 var(--space-12);
   letter-spacing: .05em;
   white-space: nowrap;
 }
@@ -361,10 +390,10 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   background: var(--color-surface);
   border: none;
   border-left: 1px solid var(--color-border);
-  padding: var(--space-6) var(--space-12);
+  padding: 0 var(--space-12);
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+  transition: background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
 }
 .room-cluster-btn:hover        { background: var(--color-accent-subtle); color: var(--color-accent); }
 .room-cluster-btn.danger:hover { background: var(--color-error-tint); color: var(--color-error); }
@@ -466,12 +495,14 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   background: none;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xs);
-  padding: var(--space-4);
+  /* Small square — a 24px target was too small to hit comfortably. */
+  width: var(--control-sm);
+  height: var(--control-sm);
   cursor: pointer;
   color: var(--color-text-3);
-  transition: background var(--motion-fast) ease,
-              color var(--motion-fast) ease,
-              border-color var(--motion-fast) ease;
+  transition: background var(--motion-fast) var(--ease-standard),
+              color var(--motion-fast) var(--ease-standard),
+              border-color var(--motion-fast) var(--ease-standard);
 }
 .btn-icon:hover        { background: var(--color-accent-subtle); color: var(--color-accent); border-color: var(--color-accent); }
 .btn-icon.danger:hover { background: var(--color-error-tint); color: var(--color-error); border-color: var(--color-error); }
@@ -500,11 +531,11 @@ h1, h2, h3 { font-family: var(--font-display); color: var(--color-text); }
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color var(--motion-fast) ease,
-              background var(--motion-fast) ease,
-              color var(--motion-fast) ease,
-              transform var(--motion-fast) ease,
-              box-shadow var(--motion-fast) ease;
+  transition: border-color var(--motion-fast) var(--ease-standard),
+              background var(--motion-fast) var(--ease-standard),
+              color var(--motion-fast) var(--ease-standard),
+              transform var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard);
 }
 .card:hover:not(:disabled) {
   border-color: var(--color-accent);

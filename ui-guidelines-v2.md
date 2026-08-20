@@ -1,4 +1,4 @@
-# UI Guidelines — Warm Precision Design System
+# UI Guidelines — Warm Precision Design System (v2.1)
 
 ## Purpose
 
@@ -7,6 +7,17 @@ A shared visual language for aligning any project's UI to the same design system
 The goal is **alignment, not a redesign**. Apply these rules to the existing product, layout, UX, and information architecture. Do not restructure a product just to make it fit the system.
 
 This system is intentionally small and opinionated. Prefer consistency and reuse over inventing new visual treatments.
+
+### Changes in 2.1
+
+Four additions, each closing a gap that produced arbitrary decisions during implementation:
+
+- **Easing curves** (§6) — motion had durations but no curves, so implementations fell back to bare `ease`.
+- **Semantic tints** (§2) — semantic colors had no background values, but badges need one.
+- **Control heights** (§2) — nothing governed the height of buttons, inputs, and selects, so they drifted apart. This also fills in §4's Small/Medium/Large button sizes, which were named but never defined.
+- **Translucent borders** (§2) — opaque border hexes could not sit correctly on more than one surface color.
+
+Everything else is unchanged. The elevation model stays flat-first, gradients stay out, and body text stays at 16px. Restraint is the point of this system, not a limitation of it.
 
 ---
 
@@ -48,9 +59,9 @@ Text primary:        #0f0d0a
 Text secondary:      #5c5448
 Text tertiary:       #a09280
 
-Border subtle:       #eee3d4
-Border default:      #e8d8c2
-Border strong:       #d8c8b0
+Border subtle:       rgba(159,93,1,0.15)
+Border default:      rgba(159,93,1,0.24)
+Border strong:       rgba(159,93,1,0.36)
 
 Accent:              #D07818
 Accent hover:        #b86814
@@ -59,11 +70,34 @@ Accent subtle:       rgba(208,120,24,0.08)
 Accent soft:         rgba(208,120,24,0.14)
 
 Error:               #dc2626
+Error tint:          rgba(220,38,38,0.10)
 Success:             #2f7d4a
+Success tint:        rgba(47,125,74,0.10)
 Warning:             #a66a00
+Warning tint:        rgba(166,106,0,0.10)
 
 Focus:               #D07818
 ```
+
+Borders are translucent so that one token reads correctly on every surface. An
+opaque border can only be tuned for one background; layered over white, the warm
+canvas, and the secondary surface, it will look right on at most one of them.
+
+The base is a deep amber-brown rather than a neutral charcoal. Neutral
+translucency renders grey on white — which is the most common surface in the
+system — and quietly desaturates the warmth. For reference, these are the
+composited results:
+
+```text
+                  on #ffffff   on #fdf7ec   on #f5ede0
+Border subtle     #f1e7d9      #efe0c9      #e8d7bf
+Border default    #e8d8c2      #e6d2b4      #e0caaa
+Border strong     #dcc5a4      #dbc097      #d6b990
+```
+
+Semantic tints exist only so that status badges and inline notices have a
+background. They are set at 0.10 to match the accent pill in §4, so a success
+badge and an accent badge carry the same visual weight.
 
 Rules:
 
@@ -74,6 +108,16 @@ Rules:
 - Keep backgrounds and borders soft. Avoid harsh black separators.
 - Do not use gradients unless the product specifically requires them.
 - Do not use color as decoration when it does not communicate hierarchy or state.
+- Never derive a border or shadow from pure black (`#000000`). Borders use the
+  warm translucent values above; shadows use the near-black in §2 Elevation.
+- Semantic tints belong on badges, pills, and inline notices. Do not tint page
+  sections, cards, table rows, or whole surfaces with a semantic color — §3 still
+  applies: put the state on the text, icon, border, or indicator, not on the
+  surrounding UI.
+- Keep semantic colors distinguishable from the accent. A warning that reads as
+  brand amber cannot do its job.
+- Semantic colors must stay legible on the surface they sit on. Prefer a value
+  that clears 4.5:1 against white over one that merely looks correct.
 
 ### Typography
 
@@ -137,6 +181,37 @@ Rules:
 - Prefer these values over arbitrary numbers.
 - Do not change existing component dimensions merely to force them onto the scale.
 
+### Control heights
+
+Inline controls — buttons, inputs, selects, dropdown triggers — share three
+heights. Mismatched control heights are the most common reason an otherwise
+careful interface looks unconsidered, so this is worth enforcing even when
+nothing else about a component changes.
+
+```text
+Small:    32px   Label 14/20      dense chrome, icon buttons, toolbar controls
+Medium:   40px   Body 16/24       default
+Large:    48px   Body 16/24       prominent CTAs
+```
+
+These are the sizes §4 refers to as Small, Medium, and Large.
+
+Rules:
+
+- Controls sitting on the same row must share a height. This matters more than
+  any individual control's ideal size.
+- Medium is the default. Reach for Small only where density is genuinely needed,
+  and Large only for a page's primary action.
+- Text size is part of the height. Do not fit smaller text into a control to make
+  it shorter — pick the smaller height, which already carries the smaller text.
+- Small is not an appropriate size for a primary action on a touch target. Where
+  a control is the main way to proceed on a small viewport, use Medium or Large
+  so it stays comfortably tappable (§7).
+- Height is fixed; horizontal padding is not. Pad from the spacing scale to suit
+  the label.
+- Do not resize existing controls that already work merely to land on these
+  numbers. Apply them to new controls, and to rows that are visibly misaligned.
+
 ### Radius
 
 ```text
@@ -176,6 +251,10 @@ Shadow small:  0 1px 2px rgba(15,13,10,0.04)
 Shadow medium: 0 4px 16px rgba(15,13,10,0.07)
 Shadow large:  0 12px 40px rgba(15,13,10,0.10)
 ```
+
+Shadows keep the near-black base rather than the warm border base. A shadow is
+absence of light, not a colored edge — tinting it amber reads as muddy rather
+than warm. This is the one place a near-neutral value is correct.
 
 Rules:
 
@@ -270,7 +349,7 @@ Use four basic levels:
 - White text
 - 8px radius
 - Instrument Sans 600
-- Medium, comfortable padding
+- Medium height by default (§2), padding from the spacing scale
 
 **Secondary**
 - Surface background
@@ -287,15 +366,20 @@ Use four basic levels:
 - Use semantic error styling
 - Keep the treatment restrained
 
-Button sizes:
+Button sizes use the control heights from §2:
 
 ```text
-Small:   compact controls
-Medium:  default
-Large:   prominent CTAs
+Small:   32px   Label 14/20   compact controls
+Medium:  40px   Body 16/24    default
+Large:   48px   Body 16/24    prominent CTAs
 ```
 
-Do not create many button variants unless the product genuinely needs them.
+Horizontal padding is not fixed by the size — pad from the spacing scale to suit
+the label, typically 12–16 for Small and 16–24 for Medium and Large.
+
+Do not create many button variants unless the product genuinely needs them. Three
+sizes across four levels is already more combinations than most products use;
+adding a fourth size is almost never the answer.
 
 ### Inputs
 
@@ -306,7 +390,7 @@ Default:
 - 8px radius
 - Instrument Sans
 - Clear label and/or placeholder
-- Comfortable vertical padding
+- Medium height by default (§2), matching the buttons they sit beside
 
 States:
 
@@ -354,9 +438,15 @@ Size:       12px
 Padding:    4px 10px
 ```
 
+For a badge carrying a semantic state rather than a brand one, swap the accent
+pair for a semantic pair at the same opacity — success tint with success text,
+and so on. Keeping every badge at 0.10 is what stops a red badge from shouting
+louder than an amber one purely as an artifact of its color.
+
 Use filled accent only for strongly active/selected pills.
 
 Badges should communicate status or classification, not be used as decoration.
+A badge that always says the same thing is a label, and should look like one.
 
 ### Tabs / segmented controls
 
@@ -451,6 +541,23 @@ Use:
 - Normal for dropdowns, popovers, and common transitions
 - Slow only for larger spatial changes
 
+Two easing curves, paired to those durations:
+
+```text
+Standard:    cubic-bezier(0, 0, 0.2, 1)
+Emphasized:  cubic-bezier(0.16, 1, 0.3, 1)
+```
+
+- Standard for Fast and Normal: state changes, color and border shifts, hovers.
+- Emphasized for Slow, and for anything entering or leaving the screen — popovers,
+  dropdowns, sheets, drawers. It decelerates hard, so movement lands rather than
+  drifting to a stop.
+- Neither curve overshoots. A strong decelerate is not a spring: nothing should
+  travel past its final position and settle back.
+- Do not use `ease-in` for anything the user is waiting on. Motion that starts
+  slowly reads as lag.
+- Do not transition `all`. Name the properties.
+
 Prefer opacity and transform transitions.
 
 Avoid:
@@ -505,12 +612,15 @@ Do not introduce:
 - Arbitrary gradients
 - Random border radii
 - One-off shadows
+- Neutral or black-derived borders
 - Mixed icon families
 - Decorative glass effects
 - Excessive blur
 - Emoji as UI icons
 - Unnecessary animation
+- One-off easing curves
 - Arbitrary spacing values when a system value works
+- Arbitrary control heights when a system height works
 
 ### When something is unspecified
 
@@ -550,9 +660,10 @@ Across different projects, the following should remain recognizable:
 - Amber as the single brand accent
 - Bricolage Grotesque for expressive hierarchy
 - Instrument Sans for functional UI
-- Soft borders and restrained elevation
+- Soft warm borders and restrained elevation
 - Compact, consistent radii
 - Generous but disciplined spacing
+- Controls that line up
 - Quiet interaction states
 - Minimal decoration
 - Strong content hierarchy
